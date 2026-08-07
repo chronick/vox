@@ -1,0 +1,14 @@
+# A take-card: harmonize a lead voice into a stacked choir, then self-verify that the render
+# landed near the programmed axis coordinate. Point `source` at any mono voice clip.
+name: choir-probe
+source: ./lead.wav
+render:
+  op: harmonize
+  params:
+    chord: [0, 3, 7]      # minor triad
+    mode: follow          # parallel-follow the melody → natural choir
+    drone: true           # sustained tonic underneath
+target:                   # the programmed axis coordinate this take should land near
+  breathiness: 0.12
+  roughness: 0.25
+  spatiality: 0.30

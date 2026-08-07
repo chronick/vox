@@ -1,0 +1,99 @@
+# bodies.yaml — the carrier-voice palette.
+# fingerprint.{f0_hz,hnr_db,inharmonicity,centroid_hz,rolloff_hz} are MEASURED by
+# registry.measure_fingerprints (f0 via vox-core's bass-safe guarded ruler); do not
+# hand-edit those — re-run the fingerprint pass instead.
+bodies:
+- name: growl-55
+  engine: sc-nrt
+  params:
+    synthdef: voxGrowl
+    freq: 55
+    ratio: 2.37
+    index: 8
+    idxLfoRate: 0.7
+    idxLfoDepth: 4
+    lpf: 2500
+    drive: 2
+  tags: [deep, harsh]
+  desc: FM growl — ~55 Hz sine modulated at a non-integer ratio, high index
+    breathing on a slow LFO, tanh-saturated, gently low-passed. Harsh, animal, inharmonic.
+  fingerprint:
+    f0_hz: 86.59
+    hnr_db: -0.33
+    inharmonicity: 0.6423
+    centroid_hz: 537.6
+    rolloff_hz: 1228.2
+- name: subsaw-55
+  engine: sc-nrt
+  params:
+    synthdef: voxSubSaw
+    freq: 55
+    detune: 12
+    drive: 3
+    lpfStart: 600
+    lpfEnd: 180
+    rq: 0.3
+    subAmp: 0.5
+  tags: [deep, synthetic]
+  desc: Three saws detuned ±12 cents around 55 Hz, tanh-driven, a resonant LPF falling
+    600→180 Hz over the note, plus a sub sine an octave below. Massive, synthetic.
+  fingerprint:
+    f0_hz: 55.05
+    hnr_db: 2.72
+    inharmonicity: 0.1374
+    centroid_hz: 178.2
+    rolloff_hz: 384.8
+- name: throat-60
+  engine: sc-nrt
+  params:
+    synthdef: voxThroat
+    freq: 60
+    f1: 300
+    f2: 700
+    f3: 1200
+    breath: 0.05
+  tags: [deep, vocal]
+  desc: A giant's vocal tract — 60 Hz impulse train through three low Formlet formants
+    (300/700/1200 Hz) with a touch of pre-formant breath. Vocal, but wrong.
+  fingerprint:
+    f0_hz: 60.18
+    hnr_db: 2.39
+    inharmonicity: 0.2092
+    centroid_hz: 399.3
+    rolloff_hz: 780.0
+- name: fof-a-180
+  engine: fof
+  params:
+    freq: 180
+    f1: 730
+    f2: 1090
+    f3: 2440
+    f4: 3400
+    f5: 4500
+  tags: [clean, reference]
+  desc: FOF/chant /a/ vowel at 180 Hz — the clean formant-sung reference at human
+    vocal-tract scale.
+  fingerprint:
+    f0_hz: 180.1
+    hnr_db: 30.29
+    inharmonicity: 0.0016
+    centroid_hz: 786.9
+    rolloff_hz: 1095.3
+- name: fof-impossible
+  engine: fof
+  params:
+    freq: 220
+    f1: 1200
+    f2: 2600
+    f3: 4200
+    f4: 5200
+    f5: 6000
+  tags: [unreal]
+  desc: FOF voice with a formant stack no human vocal tract can produce (formants
+    raised past any real vowel) — the otherworldliness dial.
+  fingerprint:
+    f0_hz: 219.85
+    hnr_db: 23.86
+    inharmonicity: 0.0
+    centroid_hz: 1992.4
+    rolloff_hz: 4110.4
