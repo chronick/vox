@@ -33,12 +33,17 @@ each with its own tests:
 | `vox vector` | a six-axis voice coordinate (humanness, breathiness, roughness, intelligibility, multiplicity, spatiality); measure it, and diff it against a target |
 | `vox lyric` | lyric prosody verifier + CMUdict packet builder (delivery: sustained or percussive) |
 | `vox corpus` | voice-corpus ingest gate: peak-normalize + VAD-survivability |
+| `vox flow` | a rhythmic cadence grammar: pattern DSL → grid-placed syllables, say-spat render, named fx chains |
+| `vox syllabank` | a syllable-addressable sample bank with a hard provenance contract (source + license or refused) |
+| `vox dataset` | the dataset-health doctor: rubric-scored voicebank fitness with shipped model profiles |
+| `vox take` | card-driven render-and-self-verify: render, measure on the six axes, report the error |
+| `vox bodies` | a registry of named carrier voices with measured fingerprints |
+| `vox tongue` | a phoneme score with render paths: say→WORLD singing, bank concat, DiffSinger export, singing warp |
 
-Plus `vox-core` (the shared bass-safe F0 ruler) and four SuperCollider
-synthdefs (`voxFof`, `voxGrowl`, `voxSubSaw`, `voxThroat`) rendered
-through smpl-synth's NRT bridge. Still to port: the phoneme-score tool
-(`vox tongue`), the cadence grammar, the take runner, the voice
-registry, the syllable bank, and the dataset doctor.
+Plus `vox-core` (the shared bass-safe F0 ruler and the shipped
+SuperCollider synthdefs `voxFof`/`voxGrowl`/`voxSubSaw`/`voxThroat`,
+rendered through smpl-synth's NRT bridge). One composite renderer (the
+carrier chain) remains to port.
 
 ## Use it with smpl
 

@@ -31,6 +31,9 @@ KNOWN_TOOLS: dict[str, str] = {
     "flow": "tools/vox-flow",
     "syllabank": "tools/vox-syllabank",
     "dataset": "tools/vox-dataset",
+    "take": "tools/vox-take",
+    "bodies": "tools/vox-bodies",
+    "tongue": "tools/vox-tongue",
 }
 
 

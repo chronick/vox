@@ -1,0 +1,47 @@
+[project]
+name = "vox-tongue"
+version = "0.1.0"
+description = "vox tongue — a phoneme score: the ONE intermediate representation between words and every synthesis engine. ARPABET syllables on a beat grid with per-syllable notes/dynamics/articulation, plus render paths off it: deterministic say→WORLD singing (say-render each syllable, then impose the exact per-syllable pitch via the larynx), syllable-bank concat, DiffSinger .ds export, and a whisper-aligned singing warp that snaps an externally rendered voice onto the score's grid. Heavy dep is pyworld, so this tool lives in its own isolated venv pinned to <3.13; composes vox-larynx, vox-flow, vox-syllabank, and vox-core as declared dependencies."
+# pyworld ships wheels for CPython 3.8–3.12 only; pin to <3.13 for the wheel.
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "smplstream",
+    "vox-core",
+    "vox-larynx",
+    "vox-flow",
+    "vox-syllabank",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "soundfile>=0.12",
+    "pyworld>=0.3.4",
+    # pyworld 0.3.5 imports `pkg_resources` at import time; setuptools>=81 removed it.
+    "setuptools<81",
+    "pyyaml>=6.0",
+    "pronouncing>=0.2.0",
+]
+
+[project.optional-dependencies]
+# The singing warp aligns via faster-whisper word timestamps; without it, warp is gated off.
+whisper = ["faster-whisper>=1.0"]
+
+[project.scripts]
+vox-tongue = "vox_tongue.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vox_tongue"]
+
+[tool.uv.sources]
+smplstream = { git = "https://github.com/chronick/smpl", subdirectory = "packages/smplstream" }
+vox-core = { path = "../../packages/vox-core", editable = true }
+vox-larynx = { path = "../vox-larynx", editable = true }
+vox-flow = { path = "../vox-flow", editable = true }
+vox-syllabank = { path = "../vox-syllabank", editable = true }
+vox-lyric = { path = "../vox-lyric", editable = true }
+
+[dependency-groups]
+# vox-lyric supplies the packet fixtures in tests.
+dev = ["pytest>=8", "vox-lyric"]

@@ -30,6 +30,12 @@ uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-laryn
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-vector
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-lyric
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-corpus
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-flow
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-syllabank
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-dataset
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-take
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-bodies
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-tongue
 ```
 
 For the pipe examples you will also want the smpl core (`smpl read`,
@@ -46,8 +52,13 @@ For the pipe examples you will also want the smpl core (`smpl read`,
 | `vox-vector` | ≥3.10 | none (numpy/scipy) | — | — | upstream `vox ear` frames enrich it; without them it falls back to its own signal proxies |
 | `vox-lyric` | ≥3.10 | none (pure text) | pronouncing (CMUdict) | — | phones are `null`, syllable counts fall back to a heuristic |
 | `vox-corpus` | ≥3.10 | none (numpy/soundfile) | — | — | — |
-| `vox-core` (library) | 3.10–3.12 | pyworld | praat-parselmouth | — | F0 ruler degrades to pyworld-only |
-| `synthdefs/` | — | — | — | SuperCollider (`sclang`) | rendered through smpl-synth's NRT bridge; nothing renders without SuperCollider |
+| `vox-flow` | ≥3.10 | none (numpy/soundfile) | — | `say`, `ffmpeg` | score compiles anywhere; render needs `say`, chains need `ffmpeg` |
+| `vox-syllabank` | 3.10–3.12 | pyworld | `[fof]` extra (smpl-synth) | `say`; SuperCollider for FOF | seeds from `say` alone; FOF vowels skip without SC |
+| `vox-dataset` | 3.10–3.12 | pyworld | `[whisper]` extra | — | phone coverage reads "unknown" without transcripts/whisper |
+| `vox-take` | 3.10–3.12 | via siblings (pyworld, parselmouth) | — | `say`/`ffmpeg` for flow cards | larynx cards run without any system binary |
+| `vox-bodies` | 3.10–3.12 | via siblings + smpl-synth | — | SuperCollider for SC engines | larynx-recipe bodies render without SC |
+| `vox-tongue` | 3.10–3.12 | pyworld (+ siblings) | `[whisper]` extra | `say` for the sing path | compile/emit-ds work anywhere; sing needs `say`; warp needs whisper |
+| `vox-core` (library) | 3.10–3.12 | pyworld | praat-parselmouth | — | F0 ruler degrades to pyworld-only; also ships the voxFof/voxGrowl/voxSubSaw/voxThroat synthdefs as package data |
 
 Notes on the pins:
 
