@@ -1,0 +1,26 @@
+[project]
+name = "vox-lyric"
+version = "0.1.0"
+description = "vox lyric — lyric prosody verifier and packet builder. Lyrics are written against a delivery spec, then verified against it: per-delivery prosody (sustained = vowel density + open syllables + long arcs; percussive = plosive density + tight syllable budgets), a replaceable word-blocklist (evocative beats literal), and choppability (every line must survive being sliced into syllables). The packet subcommand adds a CMUdict G2P layer for the score compiler. Pure text — no audio deps."
+requires-python = ">=3.10"
+dependencies = [
+    "smplstream",
+    "pyyaml>=6.0",
+    "pronouncing>=0.2.0",
+]
+
+[project.scripts]
+vox-lyric = "vox_lyric.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vox_lyric"]
+
+[tool.uv.sources]
+smplstream = { git = "https://github.com/chronick/smpl", subdirectory = "packages/smplstream" }
+
+[dependency-groups]
+dev = ["pytest>=8"]

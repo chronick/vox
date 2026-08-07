@@ -27,6 +27,7 @@ KNOWN_TOOLS: dict[str, str] = {
     "corpus": "tools/vox-corpus",
     "larynx": "tools/vox-larynx",
     "vector": "tools/vox-vector",
+    "lyric": "tools/vox-lyric",
 }
 
 
