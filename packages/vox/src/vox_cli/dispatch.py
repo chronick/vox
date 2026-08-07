@@ -24,6 +24,7 @@ REPO = "https://github.com/chronick/vox"
 # with tools/ as ports land.
 KNOWN_TOOLS: dict[str, str] = {
     "ear": "tools/vox-ear",
+    "corpus": "tools/vox-corpus",
 }
 
 
