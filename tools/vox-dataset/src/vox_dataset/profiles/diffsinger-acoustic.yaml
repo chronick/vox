@@ -1,0 +1,93 @@
+name: diffsinger-acoustic
+description: >
+  Fitness for training a DiffSinger acoustic voicebank from a labelled singing corpus. Wants a
+  dry, mono, 44.1 kHz, phonetically-complete singing set with real pitch range and clean 5-15 s
+  segments. Phone-coverage checks report `na` when the dataset has no transcripts.
+
+checks:
+  - id: usable-minutes
+    label: "Usable minutes (>= 30 min)"
+    metric: usable_minutes
+    op: ge
+    target: 30
+    warn: 20
+    weight: 4
+    severity: critical
+    remediation: "Only {value} usable min; need {target}. Record ~{deficit} more minutes of clean singing."
+
+  - id: mono
+    label: "All clips mono"
+    metric: channel_counts
+    op: dist_frac
+    key: "1"
+    min: 1.0
+    warn: 0.95
+    weight: 2
+    severity: critical
+    remediation: "Only {value} of clips are mono. Downmix stereo files to mono before training."
+
+  - id: sr-44100
+    label: "All clips 44.1 kHz"
+    metric: sr_counts
+    op: dist_frac
+    key: "44100"
+    min: 1.0
+    warn: 0.9
+    weight: 2
+    severity: critical
+    remediation: "Only {value} of clips are 44.1 kHz. Resample the rest to 44100 Hz."
+
+  - id: no-clipping
+    label: "No clipping"
+    metric: frac_clipped
+    op: le
+    target: 0.0
+    warn: 0.03
+    weight: 3
+    severity: critical
+    remediation: "{value} of clips clip. Re-record or peak-normalise below full scale (leave headroom)."
+
+  - id: dryness
+    # Singing-calibrated: a speech-calibrated -30 target is unreachable for singing —
+    # clean sung material reads -9 to -12 dB (a sung note's natural release is not
+    # reverb). -8 passes clean sung corpora yet still fails reverb-drenched separated
+    # masters (~-4.6).
+    label: "Dry (low reverb tail)"
+    metric: median_dryness_db
+    op: le
+    target: -8
+    warn: -6
+    weight: 3
+    severity: major
+    remediation: "Median tail is {value} dB (wetter than -8). De-reverb or record drier. Note: singing-calibrated (vault-dxyc)."
+
+  - id: phone-coverage
+    label: "Phone coverage >= 95% (weighted)"
+    metric: phone_coverage_weighted_pct
+    op: ge
+    target: 95
+    warn: 90
+    weight: 3
+    severity: major
+    remediation: "Weighted phone coverage {value}%. Missing phones: {missing} -> add syllabary lines exercising them."
+
+  - id: pitch-span
+    label: "Pitch span >= 12 semitones"
+    metric: pitch_span_semitones
+    op: ge
+    target: 12
+    warn: 8
+    weight: 3
+    severity: major
+    remediation: "Pitch span only {value} semitones. Add takes at the extremes of the bank's intended range."
+
+  - id: segment-length
+    label: "Segments 5-15 s"
+    metric: durations
+    op: frac_in_range
+    target: [5, 15]
+    min: 0.8
+    warn: 0.6
+    weight: 2
+    severity: minor
+    remediation: "Only {value} of clips are 5-15 s ({n_out} outside). Re-segment long/short files into phrase-length clips."

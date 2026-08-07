@@ -1,0 +1,77 @@
+name: vocoder-ft
+description: >
+  Fitness for fine-tuning a neural vocoder (HiFi-GAN / BigVGAN style). PHONEME-FREE: a vocoder
+  learns waveform reconstruction, so linguistic coverage is irrelevant — what matters is audio
+  quality (clean, high SNR, no clipping), acoustic diversity (pitch range, clip count), and enough
+  minutes. No transcript checks appear here at all.
+
+checks:
+  - id: usable-minutes
+    label: "Usable minutes (>= 20 min)"
+    metric: usable_minutes
+    op: ge
+    target: 20
+    warn: 10
+    weight: 3
+    severity: critical
+    remediation: "Only {value} usable min; need {target}. Add ~{deficit} more minutes of clean audio."
+
+  - id: clip-count
+    label: "Diversity: clip count (>= 30)"
+    metric: clip_count
+    op: ge
+    target: 30
+    warn: 15
+    weight: 2
+    severity: minor
+    remediation: "Only {value} clips. More distinct clips improve reconstruction diversity."
+
+  - id: snr
+    label: "Mean SNR >= 40 dB"
+    metric: mean_snr_db
+    op: ge
+    target: 40
+    warn: 25
+    weight: 3
+    severity: major
+    remediation: "Mean SNR {value} dB (want >= 40). Denoise or re-record with a lower noise floor."
+
+  - id: noise-floor
+    label: "Noise floor <= -50 dBFS"
+    metric: median_noise_floor_dbfs
+    op: le
+    target: -50
+    warn: -40
+    weight: 2
+    severity: major
+    remediation: "Median noise floor {value} dBFS. A vocoder will bake this hiss in — denoise the corpus."
+
+  - id: no-clipping
+    label: "No clipping"
+    metric: frac_clipped
+    op: le
+    target: 0.0
+    warn: 0.05
+    weight: 3
+    severity: critical
+    remediation: "{value} of clips clip. A vocoder learns the distortion — remove or fix clipped clips."
+
+  - id: dryness
+    label: "Dry (low reverb tail)"
+    metric: median_dryness_db
+    op: le
+    target: -25
+    warn: -18
+    weight: 2
+    severity: major
+    remediation: "Median tail {value} dB. Reverb becomes part of the learned voice — de-reverb or re-record."
+
+  - id: pitch-diversity
+    label: "Pitch span >= 12 semitones"
+    metric: pitch_span_semitones
+    op: ge
+    target: 12
+    warn: 6
+    weight: 2
+    severity: minor
+    remediation: "Pitch span {value} semitones. Add material across a wider pitch range for better coverage."

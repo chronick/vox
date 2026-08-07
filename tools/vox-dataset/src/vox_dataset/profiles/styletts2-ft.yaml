@@ -1,0 +1,79 @@
+name: styletts2-ft
+description: >
+  Fitness for fine-tuning a StyleTTS2 (spoken TTS) voice. Wants 30 min - 1 h of clean SPOKEN
+  speech with transcripts: broad phonetic coverage and a natural spoken syllable rate (not sung).
+  Transcript-dependent checks report `na` when the dataset has none.
+
+checks:
+  - id: usable-minutes
+    label: "Usable minutes (30 min - 1 h)"
+    metric: usable_minutes
+    op: ge
+    target: 30
+    warn: 20
+    weight: 4
+    severity: critical
+    remediation: "Only {value} usable min; StyleTTS2 wants 30-60. Record ~{deficit} more minutes."
+
+  - id: mono
+    label: "All clips mono"
+    metric: channel_counts
+    op: dist_frac
+    key: "1"
+    min: 1.0
+    warn: 0.9
+    weight: 1
+    severity: major
+    remediation: "Only {value} of clips are mono. Downmix to mono."
+
+  - id: no-clipping
+    label: "No clipping"
+    metric: frac_clipped
+    op: le
+    target: 0.0
+    warn: 0.05
+    weight: 2
+    severity: critical
+    remediation: "{value} of clips clip. Fix or drop clipped clips."
+
+  - id: snr
+    label: "Mean SNR >= 30 dB"
+    metric: mean_snr_db
+    op: ge
+    target: 30
+    warn: 20
+    weight: 2
+    severity: major
+    remediation: "Mean SNR {value} dB (want >= 30). Denoise or re-record cleaner."
+
+  - id: phone-coverage
+    label: "Transcript phone coverage >= 90% (weighted)"
+    metric: phone_coverage_weighted_pct
+    op: ge
+    target: 90
+    warn: 80
+    weight: 3
+    severity: major
+    remediation: "Weighted phone coverage {value}%. Missing phones: {missing} -> add sentences exercising them."
+
+  - id: spoken-register
+    label: "Spoken syllable rate 2.5-7.5 /s"
+    metric: syllable_rate_hz
+    op: frac_in_range
+    target: [2.5, 7.5]
+    min: 0.7
+    warn: 0.5
+    weight: 3
+    severity: major
+    remediation: "Only {value} of clips sit in the spoken syllable-rate band ({n_out} out) — sung/held material is a poor StyleTTS2 fit."
+
+  - id: segment-length
+    label: "Segments 2-15 s"
+    metric: durations
+    op: frac_in_range
+    target: [2, 15]
+    min: 0.8
+    warn: 0.6
+    weight: 2
+    severity: minor
+    remediation: "Only {value} of clips are 2-15 s ({n_out} outside). Re-segment into utterance-length clips."

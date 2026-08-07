@@ -28,6 +28,9 @@ KNOWN_TOOLS: dict[str, str] = {
     "larynx": "tools/vox-larynx",
     "vector": "tools/vox-vector",
     "lyric": "tools/vox-lyric",
+    "flow": "tools/vox-flow",
+    "syllabank": "tools/vox-syllabank",
+    "dataset": "tools/vox-dataset",
 }
 
 
