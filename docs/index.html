@@ -224,12 +224,9 @@
     <p>Everything installs with <a href="https://docs.astral.sh/uv/">uv</a>.
       The dispatcher is tiny; tools install one by one, so a heavy dependency
       in one can never break another:</p>
-    <div class="copy-wrap">
 <pre><span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=packages/vox
 <span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-ear
 <span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-larynx</pre>
-      <button class="copy-btn" data-copy="uv tool install git+https://github.com/chronick/vox#subdirectory=packages/vox">copy</button>
-    </div>
     <p><code>vox --help</code> lists every tool with its install command.
       The full dependency matrix (Python pins, optional extras, system
       binaries, what degrades without them) is in
@@ -250,19 +247,6 @@
   </footer>
 </div>
 
-<script>
-document.querySelectorAll('.copy-btn').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    navigator.clipboard.writeText(btn.dataset.copy).then(function () {
-      btn.textContent = 'copied';
-      btn.classList.add('done');
-      setTimeout(function () {
-        btn.textContent = 'copy';
-        btn.classList.remove('done');
-      }, 1600);
-    });
-  });
-});
-</script>
+<script src="copy.js"></script>
 </body>
 </html>

@@ -149,6 +149,7 @@ h2 {
 }
 h2::before { content: '// '; color: var(--accent); }
 section > p { max-width: 70ch; margin-bottom: 0.8rem; }
+section > pre, section > .pre-wrap { margin-bottom: 1rem; }
 p.dim { color: var(--dim); }
 .lead { font-size: 1.05rem; }
 
@@ -159,13 +160,14 @@ p.dim { color: var(--dim); }
   padding: 1.15rem 1.2rem 1.2rem;
   margin: 1.3rem 0;
 }
-.demo > pre { margin: 0.15rem 0 0.55rem; background: var(--bg); }
+.demo > pre, .demo > .pre-wrap > pre { margin: 0.15rem 0 0.55rem; background: var(--bg); }
 .demo-title { font-family: var(--mono); font-size: 1rem; font-weight: 700; color: #e9eef2; margin-bottom: 0.2rem; }
 .plain { color: var(--dim); font-size: 0.95rem; max-width: 74ch; margin-bottom: 0.75rem; }
 .demo-note { color: var(--dim); font-size: 0.93rem; max-width: 74ch; margin-top: 0.85rem; }
 .demo-note strong { color: var(--ink); }
 
-.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.9rem; }
+.pair:has(.pane:only-child) { grid-template-columns: 1fr; }  /* a lone pane spans the row */
 .pane { min-width: 0; }
 .chip {
   display: inline-block;
@@ -231,22 +233,28 @@ p.dim { color: var(--dim); }
 .tools code { white-space: nowrap; background: var(--panel); }
 .tools span { color: var(--dim); line-height: 1.45; }
 
-.copy-wrap { position: relative; }
+/* copy-icon buttons, decorated onto every pre by the shared script */
+.pre-wrap { position: relative; }
 .copy-btn {
   position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
+  top: 0.45rem;
+  right: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 11px;
   background: var(--panel);
   color: var(--dim);
   border: 1px solid var(--border);
   border-radius: 5px;
-  padding: 0.22rem 0.55rem;
+  padding: 0.25rem 0.4rem;
   cursor: pointer;
+  opacity: 0.75;
 }
-.copy-btn:hover { color: var(--accent-ink); border-color: var(--accent-ink); }
-.copy-btn.done { color: var(--accent); border-color: var(--accent); }
+.copy-btn svg { width: 13px; height: 13px; display: block; }
+.copy-btn:hover { color: var(--accent-ink); border-color: var(--accent-ink); opacity: 1; }
+.copy-btn.done { color: var(--accent); border-color: var(--accent); opacity: 1; }
 
 footer {
   margin-top: 3.2rem;
