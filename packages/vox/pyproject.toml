@@ -1,0 +1,16 @@
+[project]
+name = "vox"
+version = "0.1.0"
+description = "vox — voice synthesis and analysis as pipe tools on the smpl frame protocol. The light dispatcher: `vox <x>` runs a built-in or hands off to `vox-<x>`."
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+vox = "vox_cli.dispatch:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vox_cli"]
