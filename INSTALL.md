@@ -58,6 +58,7 @@ For the pipe examples you will also want the smpl core (`smpl read`,
 | `vox-take` | 3.10–3.12 | via siblings (pyworld, parselmouth) | — | `say`/`ffmpeg` for flow cards | larynx cards run without any system binary |
 | `vox-bodies` | 3.10–3.12 | via siblings + smpl-synth | — | SuperCollider for SC engines | larynx-recipe bodies render without SC |
 | `vox-tongue` | 3.10–3.12 | pyworld (+ siblings) | `[whisper]` extra | `say` for the sing path | compile/emit-ds work anywhere; sing needs `say`; warp needs whisper |
+| `vox-carrier` | 3.10–3.12 | via siblings + smpl-analysis (librosa) | — | `say`, `ffmpeg`; SuperCollider for SC bodies | the top of the render graph; needs the full stack |
 | `vox-core` (library) | 3.10–3.12 | pyworld | praat-parselmouth | — | F0 ruler degrades to pyworld-only; also ships the voxFof/voxGrowl/voxSubSaw/voxThroat synthdefs as package data |
 
 Notes on the pins:

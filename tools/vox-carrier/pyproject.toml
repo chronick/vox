@@ -1,0 +1,43 @@
+[project]
+name = "vox-carrier"
+version = "0.1.0"
+description = "vox carrier — pour spat words into a deep harsh body. A dry word-carrying modulator (FLOW say-spit, or any pre-built clip placement) is channel-vocoded through a registry body (FM growl, sub-saw, giant throat), driven through the bass chain, and given a dry-diction layer so the words survive the formant-starved bass. The top of the vox render graph: composes bodies, flow, lyric, and tongue, with the vocoder from smpl-analysis."
+# pyworld/parselmouth via the sibling tools ship wheels for CPython 3.8–3.12 only.
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "smplstream",
+    "smpl-analysis",
+    "vox-bodies",
+    "vox-flow",
+    "vox-lyric",
+    "vox-tongue",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "soundfile>=0.12",
+]
+
+[project.scripts]
+vox-carrier = "vox_carrier.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vox_carrier"]
+
+[tool.uv]
+# Keep the resolver off fossil numba/llvmlite (librosa via smpl-analysis): old numba caps
+# numpy so low that backtracking lands on llvmlite 0.36, which cannot build on 3.10+.
+constraint-dependencies = ["numba>=0.59", "llvmlite>=0.42"]
+
+[tool.uv.sources]
+smplstream = { git = "https://github.com/chronick/smpl", subdirectory = "packages/smplstream" }
+smpl-analysis = { git = "https://github.com/chronick/smpl", subdirectory = "packages/smpl-analysis" }
+vox-bodies = { path = "../vox-bodies", editable = true }
+vox-flow = { path = "../vox-flow", editable = true }
+vox-lyric = { path = "../vox-lyric", editable = true }
+vox-tongue = { path = "../vox-tongue", editable = true }
+
+[dependency-groups]
+dev = ["pytest>=8", "pystoi>=0.4"]

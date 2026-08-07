@@ -39,11 +39,12 @@ each with its own tests:
 | `vox take` | card-driven render-and-self-verify: render, measure on the six axes, report the error |
 | `vox bodies` | a registry of named carrier voices with measured fingerprints |
 | `vox tongue` | a phoneme score with render paths: say→WORLD singing, bank concat, DiffSinger export, singing warp |
+| `vox carrier` | spat words poured into a deep harsh body: vocode + bass chain + dry-diction layer |
 
 Plus `vox-core` (the shared bass-safe F0 ruler and the shipped
 SuperCollider synthdefs `voxFof`/`voxGrowl`/`voxSubSaw`/`voxThroat`,
-rendered through smpl-synth's NRT bridge). One composite renderer (the
-carrier chain) remains to port.
+rendered through smpl-synth's NRT bridge). The port from the smpl repo
+is complete.
 
 ## Use it with smpl
 
