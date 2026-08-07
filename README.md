@@ -20,11 +20,14 @@ smpl read take.wav | vox ear | smpl view
 `smpl`, so the two toolchains sit in one pipe: smpl handles audio-in,
 storage, and reporting; vox contributes the voice-specific stages.
 
+> **Site**: <https://chronick.github.io/vox/> — hear the voices the
+> toolchain builds from synthetic sources alone.
+
 ## Status
 
-Early port, in progress: the tools are moving over from the smpl repo
-one at a time, renamed to generic instruments on the way. Live today,
-each with its own tests:
+The port from the smpl repo is complete: every tool renamed to a
+generic instrument, each with its own tests (`scripts/test-all.sh`
+runs all thirteen suites). Live today:
 
 | Tool | Does |
 |---|---|
@@ -43,8 +46,7 @@ each with its own tests:
 
 Plus `vox-core` (the shared bass-safe F0 ruler and the shipped
 SuperCollider synthdefs `voxFof`/`voxGrowl`/`voxSubSaw`/`voxThroat`,
-rendered through smpl-synth's NRT bridge). The port from the smpl repo
-is complete.
+rendered through smpl-synth's NRT bridge).
 
 ## Use it with smpl
 
