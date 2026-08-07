@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Make say sing · a vox guide</title>
+<meta name="description" content="A worked guide: turn macOS say into a singing voice with vox. Verify the words, compile a phoneme score, impose each note's pitch with the WORLD vocoder, stack a choir, and measure the result. Every command runs as shown." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site-head">
+    <a class="brand" href="./"><b>vox</b> · guide</a>
+    <nav class="site-nav">
+      <a href="./">home</a>
+      <a href="./#voices">voices</a>
+      <a href="./#install">install</a>
+      <a href="https://github.com/chronick/vox">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Make <code style="font-size:0.8em">say</code> sing</h1>
+    <p class="tag">From a spoken sentence to a five-voice choir, in six commands.</p>
+    <p class="sub">macOS ships a speech synthesizer, <code>say</code>, that has
+      been on every Mac for decades. It speaks; it does not sing. This guide
+      turns it into a singing voice with vox: verify the words, compile them
+      onto a melody, impose each note's exact pitch without changing the
+      vowels, stack the result into a choir, and measure what came out. Every
+      command below runs as shown, and every sound on this page was made by
+      these exact commands.</p>
+    <p class="house">Prerequisites: the vox tools and smpl
+      (<a href="https://github.com/chronick/vox/blob/main/INSTALL.md">INSTALL.md</a>),
+      a Mac with <code>say</code>. No SuperCollider needed for this guide.</p>
+  </section>
+
+  <section>
+    <h2>Step 1: hear the problem</h2>
+    <p><code>say</code> renders words with spoken prosody: the pitch wanders
+      where sentence intonation takes it, and the rhythm is speech rhythm.
+      Useful, free, and completely unmusical:</p>
+<pre><span class="c">$</span> say -v Fred <span class="f">-o</span> spoken.wav <span class="s">"slow river carry me home"</span></pre>
+    <div class="pair">
+      <div class="pane">
+        <span class="chip">SPOKEN</span>
+        <div class="wf"><img src="assets/wf-guide-spoken.svg" alt="Waveform of the plainly spoken sentence" /></div>
+        <audio controls preload="none" src="assets/guide-spoken.wav"></audio>
+        <p class="nums">speech rhythm, sentence intonation, no notes</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Step 2: gate the words</h2>
+    <p>Before any audio, check that the line will survive being sung. The
+      lyric verifier scores prosody for a sustained delivery (vowel density,
+      open syllables) and runs the blocklist. This line keeps:</p>
+<pre><span class="c">$</span> vox lyric review <span class="f">--delivery</span> sustained <span class="f">--lines</span> <span class="s">"slow river carry me home"</span> <span class="f">--json</span>
+<span class="o">{</span>
+<span class="o">  "verdict": "keep",</span>
+<span class="o">  "fit": 0.684,</span>
+<span class="o">  "vowel_ratio": 0.35,</span>
+<span class="o">  "open_syllable_frac": 0.4,</span>
+<span class="o">  "syllables": 7,</span>
+<span class="o">  "blocklist_flags": []</span>
+<span class="o">}</span></pre>
+    <p class="dim" style="font-size:0.93rem;">A line that came back
+      <code>rewrite</code> would be refused downstream: the score compiler
+      will not sing a line its own gate rejected.</p>
+  </section>
+
+  <section>
+    <h2>Step 3: compile words onto a melody</h2>
+    <p>The phoneme score is the one intermediate representation between words
+      and every synthesis engine: ARPABET syllables on a beat grid, each
+      carrying its note. The compiler splits the line into 7 syllables via
+      CMUdict and cycles the melody across them:</p>
+<pre><span class="c">$</span> vox tongue compile <span class="f">--lines</span> <span class="s">"slow river carry me home"</span> <span class="bs">\</span>
+    <span class="f">--melody</span> <span class="s">"A2,C3,E3,D3,C3"</span> <span class="f">--bpm</span> 90 <span class="f">--score</span> river.yaml</pre>
+    <p>The score is plain YAML you can read and edit. Its first syllable:</p>
+<pre>meta:
+  bpm: 90.0
+syllables:
+- text: slow
+  word: slow
+  phones: [S, L, OW1]
+  start_beat: 0.0
+  dur_beats: 1.0
+  note: A2
+  dyn: 1.0</pre>
+    <p class="dim" style="font-size:0.93rem;">Seven syllables land on
+      A2, C3, E3, D3, C3, A2, C3. The score outlives any renderer: the same
+      file drives the say path below, the syllable-bank concat path, and the
+      DiffSinger export (<code>vox tongue emit-ds</code>).</p>
+  </section>
+
+  <section>
+    <h2>Step 4: sing it</h2>
+    <p>The deterministic render path: <code>say</code> speaks each syllable,
+      then the WORLD vocoder replaces its pitch contour with the score's
+      exact note while keeping the formants, so the vowel identity survives
+      and nothing chipmunks. Spoken timing becomes beat timing:</p>
+<pre><span class="c">$</span> vox tongue sing <span class="f">--score</span> river.yaml <span class="f">--out</span> sung.wav</pre>
+    <div class="pair">
+      <div class="pane">
+        <span class="chip">SPOKEN</span>
+        <div class="wf"><img src="assets/wf-guide-spoken.svg" alt="Waveform of the spoken sentence" /></div>
+        <audio controls preload="none" src="assets/guide-spoken.wav"></audio>
+        <p class="nums">what say gives you</p>
+      </div>
+      <div class="pane">
+        <span class="chip out">SUNG</span>
+        <div class="wf"><img src="assets/wf-guide-sung.svg" alt="Waveform of the sung line on the beat grid" /></div>
+        <audio controls preload="none" src="assets/guide-sung.wav"></audio>
+        <p class="nums">measured f0 median <b>130.8 Hz</b>: exactly the
+          melody's median note, C3</p>
+      </div>
+    </div>
+    <p class="demo-note"><strong>The verification habit:</strong> that
+      130.8 Hz is not a description, it is a measurement
+      (<code>vox ear</code> on the render). The melody's notes are 110.0,
+      130.8, 164.8, 146.8, 130.8 Hz; the median of what was programmed is
+      the median of what was measured.</p>
+  </section>
+
+  <section>
+    <h2>Step 5: stack a choir</h2>
+    <p>Now the smpl pipe takes over. The harmonizer re-renders the sung line
+      as chord-locked copies (formants preserved, per-voice jitter and
+      vibrato decorrelated so clones read as a choir), with a drone under
+      everything:</p>
+<pre><span class="c">$</span> smpl read sung.wav <span class="p">|</span> vox larynx harmonize <span class="f">--chord</span> 0,3,7 <span class="f">--drone</span> <span class="p">|</span> smpl write choir.wav</pre>
+    <div class="pair">
+      <div class="pane">
+        <span class="chip">SUNG</span>
+        <div class="wf"><img src="assets/wf-guide-sung.svg" alt="Waveform of the single sung voice" /></div>
+        <audio controls preload="none" src="assets/guide-sung.wav"></audio>
+        <p class="nums">one voice · HNR <b>24.1 dB</b> (clean and tonal)</p>
+      </div>
+      <div class="pane">
+        <span class="chip out">CHOIR</span>
+        <div class="wf"><img src="assets/wf-guide-choir.svg" alt="Waveform of the five-voice choir with drone" /></div>
+        <audio controls preload="none" src="assets/guide-choir.wav"></audio>
+        <p class="nums"><b>5 voices</b> · chord 0,3,7 + drone ·
+          HNR <b>2.7 dB</b> (the stack thickens)</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Step 6: measure what you made</h2>
+    <p>The loop closes the way every vox pipeline closes, with numbers. Run
+      the measurement stages over the result and read the report:</p>
+<pre><span class="c">$</span> smpl read choir.wav <span class="p">|</span> vox ear describe <span class="p">|</span> vox vector measure <span class="p">|</span> smpl view</pre>
+    <p>What the measurements say about this build, sung line against choir:
+      the harmonics-to-noise ratio drops from <strong>24.1 dB to 2.7 dB</strong>
+      (five decorrelated voices plus a drone read as texture, not one clean
+      tone), and the f0 median moves from <strong>130.8 Hz to 73.5 Hz</strong>
+      (the drone an octave under the root now anchors the pitch mass). Both
+      shifts are the choir doing exactly what was asked.</p>
+    <p class="receipt">Every sound and number on this page regenerates from
+      <a href="https://github.com/chronick/vox/blob/main/docs/make_assets.sh">docs/make_assets.sh</a>
+      (the <code>guide</code> section), receipted in
+      <a href="assets/numbers.json">numbers.json</a>.</p>
+  </section>
+
+  <section>
+    <h2>Where to go from here</h2>
+    <p>Same score, different bodies: pour percussive lines into the deep
+      growl with <code>vox carrier</code> (hear it on the
+      <a href="./#voices">home page</a>), export the score for a neural
+      singer with <code>vox tongue emit-ds</code>, or snap an
+      externally sung take onto the score's grid with
+      <code>vox tongue warp</code>. The
+      <a href="https://github.com/chronick/vox/blob/main/INSTALL.md">dependency
+      matrix</a> says what each path needs.</p>
+  </section>
+
+  <footer>
+    <p>MIT · <a href="https://github.com/chronick/vox">github.com/chronick/vox</a> ·
+      <a href="./">vox home</a></p>
+    <p>Part of the LEMON house:
+      <a href="https://lemon-agent.dev">lemon-agent.dev</a> ·
+      <a href="https://lemon.audio">lemon.audio</a> ·
+      <a href="https://chronick.github.io/smpl/">smpl</a>.</p>
+  </footer>
+</div>
+</body>
+</html>

@@ -104,6 +104,66 @@ print(json.dumps(out))
 PYEOF
 )"
 
+# ------------------------------------------- the say-to-singing guide ----
+echo "-- building the guide steps (spoken -> score -> sung -> choir)"
+GUIDE_LINE="slow river carry me home"
+say -v Fred --file-format=WAVE --data-format=LEI16@44100 -o "$WORK/guide-spoken.wav" "$GUIDE_LINE"
+
+GUIDE_JSON="$("$TONGUE_PY" - "$WORK" "$GUIDE_LINE" <<'PYEOF'
+import json
+import sys
+
+import numpy as np
+import soundfile as sf
+from vox_larynx import world
+from vox_tongue import render as render_mod
+from vox_tongue import schema
+from vox_tongue.compile import compile as compile_score
+
+work, line = sys.argv[1], sys.argv[2]
+SR = 44100
+score = compile_score([line], ["A2", "C3", "E3", "D3", "C3"], bpm=90)
+open(f"{work}/guide-score.yaml", "w").write(schema.to_yaml(score))
+
+sung, manifest = render_mod.render(score, sr=SR, voice="Fred")
+sung64 = sung.astype("float64")
+sf.write(f"{work}/guide-sung.wav",
+         (sung64 / max(abs(sung64).max(), 1e-9) * 0.85).astype("float32"), SR)
+
+mix, params = world.harmonize(sung64, SR, chord=(0, 3, 7), mode="follow", drone=True)
+mix = mix / max(abs(mix).max(), 1e-9) * 0.85
+sf.write(f"{work}/guide-choir.wav", mix.astype("float32"), SR)
+
+print(json.dumps({"n_syllables": len(score["syllables"]),
+                  "notes": [s["note"] for s in score["syllables"]],
+                  "voices": params["voices"], "chord": params["chord"]}))
+PYEOF
+)"
+
+GUIDE_MEASURES="$("$TAKE_PY" - "$WORK" <<'PYEOF'
+import json
+import sys
+
+import numpy as np
+import soundfile as sf
+from vox_ear import descriptors
+from vox_vector import axes
+
+work = sys.argv[1]
+out = {}
+for name in ("guide-sung", "guide-choir"):
+    data, sr = sf.read(f"{work}/{name}.wav", dtype="float64", always_2d=True)
+    x = np.ascontiguousarray(data.mean(axis=1))
+    voice = descriptors.describe(x, sr)
+    vec = axes.measure(x, sr, upstream=voice)
+    out[name] = {"f0_median_hz": voice.get("voice.f0_median_hz"),
+                 "spatiality": vec["vector"]["spatiality"],
+                 "hnr_db": voice.get("voice.hnr_db")}
+print(json.dumps(out))
+PYEOF
+)"
+head -28 "$WORK/guide-score.yaml" > "$OUT/guide-score.txt"
+
 # ------------------------------------------------- waveform SVG renders ----
 # Page graphics of the real audio files (cool grammar: cyan = dry/in, violet = built voice).
 wf() { # in.wav out.svg color
@@ -143,18 +203,22 @@ wf "$WORK/carrier.wav"     "$OUT/wf-carrier.svg"     "$VIOLET"
 for b in growl-55 subsaw-55 throat-60 fof-a-180 fof-impossible; do
   wf "$WORK/body-$b.wav" "$OUT/wf-$b.svg" "$VIOLET"
 done
+wf "$WORK/guide-spoken.wav" "$OUT/wf-guide-spoken.svg" "$CYAN"
+wf "$WORK/guide-sung.wav"   "$OUT/wf-guide-sung.svg"   "$VIOLET"
+wf "$WORK/guide-choir.wav"  "$OUT/wf-guide-choir.svg"  "$VIOLET"
 
 # ------------------------------------------------------------ package ----
 for f in choir-dry choir carrier-dry carrier body-growl-55 body-subsaw-55 body-throat-60 \
-         body-fof-a-180 body-fof-impossible; do
+         body-fof-a-180 body-fof-impossible guide-spoken guide-sung guide-choir; do
   cp "$WORK/$f.wav" "$OUT/$f.wav"
 done
 
-"$TAKE_PY" - "$OUT/numbers.json" "$CARRIER_JSON" "$MEASURES" <<'PYEOF'
+"$TAKE_PY" - "$OUT/numbers.json" "$CARRIER_JSON" "$MEASURES" "$GUIDE_JSON" "$GUIDE_MEASURES" <<'PYEOF'
 import json
 import sys
 
-receipt = {"carrier": json.loads(sys.argv[2]), "measures": json.loads(sys.argv[3])}
+receipt = {"carrier": json.loads(sys.argv[2]), "measures": json.loads(sys.argv[3]),
+           "guide": json.loads(sys.argv[4]), "guide_measures": json.loads(sys.argv[5])}
 json.dump(receipt, open(sys.argv[1], "w"), indent=1)
 print(json.dumps(receipt, indent=1))
 PYEOF

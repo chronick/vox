@@ -52,5 +52,35 @@
    "f0_median_hz": 123.84,
    "vibrato_rate_hz": 3.1
   }
+ },
+ "guide": {
+  "n_syllables": 7,
+  "notes": [
+   "A2",
+   "C3",
+   "E3",
+   "D3",
+   "C3",
+   "A2",
+   "C3"
+  ],
+  "voices": 5,
+  "chord": [
+   0,
+   3,
+   7
+  ]
+ },
+ "guide_measures": {
+  "guide-sung": {
+   "f0_median_hz": 130.83,
+   "spatiality": 0.7159,
+   "hnr_db": 24.08
+  },
+  "guide-choir": {
+   "f0_median_hz": 73.47,
+   "spatiality": 0.7246,
+   "hnr_db": 2.74
+  }
  }
 }

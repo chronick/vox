@@ -1,0 +1,28 @@
+meta:
+  bpm: 90.0
+  key: null
+  title: null
+syllables:
+- text: slow
+  word: slow
+  phones:
+  - S
+  - L
+  - OW1
+  start_beat: 0.0
+  dur_beats: 1.0
+  note: A2
+  dyn: 1.0
+  articulation: null
+- text: ri
+  word: river
+  phones:
+  - R
+  - IH1
+  start_beat: 1.0
+  dur_beats: 1.0
+  note: C3
+  dyn: 1.0
+  articulation: null
+- text: ver
+  word: river
