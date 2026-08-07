@@ -1,0 +1,28 @@
+[project]
+name = "vox-ear"
+version = "0.1.0"
+description = "vox ear — voice-native measurement as an smpl-protocol pipe stage: F0, formants F1-F4, HNR, jitter, shimmer, vibrato, plus spectral-flatness (breathiness) and inharmonicity (clangor) supports. Heavy dep is praat-parselmouth (a compiled wheel) → isolated venv, reached via `vox ear`."
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "smplstream",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "soundfile>=0.12",
+    "praat-parselmouth>=0.4.3",
+]
+
+[project.scripts]
+vox-ear = "vox_ear.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vox_ear"]
+
+[tool.uv.sources]
+smplstream = { git = "https://github.com/chronick/smpl", subdirectory = "packages/smplstream" }
+
+[dependency-groups]
+dev = ["pytest>=8"]
