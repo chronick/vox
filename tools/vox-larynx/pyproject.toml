@@ -1,0 +1,31 @@
+[project]
+name = "vox-larynx"
+version = "0.1.0"
+description = "vox larynx — WORLD-vocoder voice tier (analyze → F0/sp/ap control, retune render, and a chord-locked harmonizer). The 'heavy dep' is pyworld (a compiled wheel), so this tool lives in its own isolated venv pinned below Python 3.13. Reached through `vox larynx` via PATH discovery."
+# pyworld 0.3.5 ships wheels for CPython 3.8–3.12 only; pin to <3.13 for the wheel.
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "smplstream",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "soundfile>=0.12",
+    "pyworld>=0.3.4",
+    # pyworld 0.3.5 imports `pkg_resources` at import time; setuptools>=81 removed it.
+    "setuptools<81",
+]
+
+[project.scripts]
+vox-larynx = "vox_larynx.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vox_larynx"]
+
+[tool.uv.sources]
+smplstream = { git = "https://github.com/chronick/smpl", subdirectory = "packages/smplstream" }
+
+[dependency-groups]
+dev = ["pytest>=8"]
