@@ -22,19 +22,48 @@ storage, and reporting; vox contributes the voice-specific stages.
 
 ## Status
 
-Early port, in progress. The tools are being moved over from the smpl
-repo one at a time and renamed to generic instruments on the way. First
-up: `vox ear` (voice-native measurement: F0, formants, harmonics-to-noise,
-jitter, shimmer, vibrato).
-
-Planned family, in the organ metaphor the tools already use:
+Early port, in progress: the tools are moving over from the smpl repo
+one at a time, renamed to generic instruments on the way. Live today,
+each with its own tests:
 
 | Tool | Does |
 |---|---|
-| `vox ear` | voice-native perception: F0, formants F1–F4, HNR, jitter, shimmer, vibrato |
-| `vox larynx` | WORLD-vocoder tier: analyze, retune, and re-render pitch/spectrum/aspiration |
-| `vox tongue` | a phoneme score: syllables on a beat grid with per-syllable pitch and articulation |
-| more | ported as they generalize |
+| `vox ear` | voice-native measurement: F0, formants F1–F4, HNR, jitter, shimmer, vibrato |
+| `vox larynx` | WORLD-vocoder tier: analyze, retune (formants kept), harmonize into a choir |
+| `vox vector` | a six-axis voice coordinate (humanness, breathiness, roughness, intelligibility, multiplicity, spatiality); measure it, and diff it against a target |
+| `vox lyric` | lyric prosody verifier + CMUdict packet builder (delivery: sustained or percussive) |
+| `vox corpus` | voice-corpus ingest gate: peak-normalize + VAD-survivability |
+
+Plus `vox-core` (the shared bass-safe F0 ruler) and four SuperCollider
+synthdefs (`voxFof`, `voxGrowl`, `voxSubSaw`, `voxThroat`) rendered
+through smpl-synth's NRT bridge. Still to port: the phoneme-score tool
+(`vox tongue`), the cadence grammar, the take runner, the voice
+registry, the syllable bank, and the dataset doctor.
+
+## Use it with smpl
+
+Every pipe below is real and runs today (install both toolchains first;
+see [INSTALL.md](INSTALL.md)):
+
+```bash
+# Measure a voice: F0, formants, HNR, vibrato, in an smpl report
+smpl read take.wav | vox ear describe | smpl view
+
+# Where does this render sit on the six axes? (ear enriches vector)
+smpl read take.wav | vox ear describe | vox vector measure | smpl view
+
+# Did the render land where the target asked? Error becomes a number.
+smpl read take.wav | vox ear describe | vox vector diff --target '{"breathiness":0.2,"roughness":0.1}'
+
+# Retune a voice two semitones up without chipmunking, back into the store
+smpl read take.wav | vox larynx render --semitones 2 | smpl write up2.wav
+
+# Stack one voice into a chord-locked choir with a drone under it
+smpl read take.wav | vox larynx harmonize --chord 0,3,7 --drone | smpl write choir.wav
+
+# Verify lyrics before any audio exists
+vox lyric review --delivery percussive --lines "spit the code back|cut the deck to black" --json
+```
 
 ## Design
 
@@ -47,6 +76,9 @@ Planned family, in the organ metaphor the tools already use:
 - **Generic instruments.** Tool names, measurements, and controls are
   standard voice-science vocabulary (formants, HNR, vibrato), not any
   one project's language.
+- **Install only what you use.** Each tool is its own isolated install
+  with its own dependency story; [INSTALL.md](INSTALL.md) has the
+  dependency matrix, the Python-pin story, and the optional pieces.
 
 Part of the LEMON house: [lemon-agent.dev](https://lemon-agent.dev) ·
 [lemon.audio](https://lemon.audio) ·
