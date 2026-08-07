@@ -1,0 +1,56 @@
+{
+ "carrier": {
+  "params": {
+   "n_lines": 2,
+   "bpm": 142.0,
+   "grid": 4,
+   "body": "growl-55",
+   "bands": 24,
+   "vocode_lo_hz": 40.0,
+   "vocode_hi_hz": 8000.0,
+   "ess_mix": 0.3,
+   "dry_db": -14.0,
+   "dry_band_hz": [
+    500.0,
+    5000.0
+   ],
+   "flatten_body": true,
+   "chain": "bass",
+   "mod_seconds": 3.3521
+  },
+  "body_f0": {
+   "f0_hz": 96.01813932567227,
+   "f0_source": "pyworld-forced-bass",
+   "f0_pyworld_hz": 96.01813932567227,
+   "f0_parselmouth_hz": 123.83883330529632
+  }
+ },
+ "measures": {
+  "choir": {
+   "vector": {
+    "humanness": 0.6505,
+    "breathiness": 0.0336,
+    "roughness": 0.7987,
+    "intelligibility": null,
+    "multiplicity": null,
+    "spatiality": 0.6031
+   },
+   "hnr_db": 2.14,
+   "f0_median_hz": 73.97,
+   "vibrato_rate_hz": 3.1
+  },
+  "carrier": {
+   "vector": {
+    "humanness": 0.7044,
+    "breathiness": 0.0192,
+    "roughness": 0.007,
+    "intelligibility": null,
+    "multiplicity": null,
+    "spatiality": 0.2262
+   },
+   "hnr_db": 4.02,
+   "f0_median_hz": 123.84,
+   "vibrato_rate_hz": 3.1
+  }
+ }
+}

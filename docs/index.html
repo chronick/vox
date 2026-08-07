@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vox · voice synthesis and analysis as pipe tools</title>
+<meta name="description" content="vox is the voice family of the smpl toolchain: measure a voice like an instrument, control a render like a score, and verify what came out. Every sound on this page was built by the commands shown. Part of the LEMON house." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site-head">
+    <a class="brand" href="#"><b>vox</b> · part of LEMON</a>
+    <nav class="site-nav">
+      <a href="#voices">voices</a>
+      <a href="#tools">tools</a>
+      <a href="#pipes">pipes</a>
+      <a href="#install">install</a>
+      <a href="https://github.com/chronick/vox">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>vox<span class="cursor"></span></h1>
+    <p class="tag">Voice synthesis and analysis as pipe tools.</p>
+    <p class="sub">The voice family of the <a href="https://chronick.github.io/smpl/">smpl</a>
+      toolchain, grown into its own package: measure a voice like an instrument,
+      control a render like a score, and verify that what came out matches what
+      was asked for. vox tools read and write the same frames as smpl, so the
+      two toolchains sit in one pipe.</p>
+
+<pre><span class="c">$</span> smpl read take.wav <span class="p">|</span> vox ear describe <span class="p">|</span> vox vector measure <span class="p">|</span> smpl view</pre>
+    <p class="translate">In plain words: load a recording, measure the voice
+      inside it (<b>ear</b>: pitch, formants, breathiness, vibrato), place it
+      on a six-axis coordinate (<b>vector</b>), and print the report. New to
+      terminal pipes? The <a href="https://chronick.github.io/smpl/#examples">smpl
+      site</a> walks through them gently.</p>
+
+    <div class="cta">
+      <a class="btn" href="#install">Install</a>
+      <a class="btn ghost" href="https://github.com/chronick/vox">GitHub</a>
+      <a class="btn ghost" href="#voices">Hear the voices</a>
+    </div>
+
+    <p class="house">Part of the LEMON house ·
+      <a href="https://lemon-agent.dev">lemon-agent.dev</a> teaches the agent method ·
+      <a href="https://lemon.audio">lemon.audio</a> is the music side ·
+      <a href="https://chronick.github.io/smpl/">smpl</a> is the audio toolchain vox grew from</p>
+  </section>
+
+  <section id="voices">
+    <h2>Voices built with vox</h2>
+    <p class="lead">Three exhibits, each rendered end to end by the commands
+      shown, from synthetic sources only (macOS <code>say</code> voices and
+      SuperCollider synthdefs; no recorded human source anywhere). They are
+      the site's examples and the toolchain's integration proof at once.</p>
+
+    <div class="demo">
+      <p class="demo-title">The choir</p>
+      <p class="plain">Two written lines become a sung choir with nobody
+        singing: the lyric verifier gates the words, the phoneme score places
+        each syllable on a melody, <code>say</code> speaks the syllables, the
+        WORLD vocoder imposes each note's exact pitch without chipmunking,
+        and the harmonizer stacks the result into a five-voice choir with a
+        drone under it.</p>
+<pre><span class="c">$</span> vox lyric packet <span class="f">--delivery</span> sustained <span class="p">|</span> vox tongue sing <span class="p">|</span> vox larynx harmonize <span class="f">--chord</span> 0,3,7 <span class="f">--drone</span></pre>
+      <div class="pair">
+        <div class="pane">
+          <span class="chip">DRY</span>
+          <div class="wf"><img src="assets/wf-choir-dry.svg" alt="Waveform of the dry rendered lines before harmonization" /></div>
+          <audio controls preload="none" src="assets/choir-dry.wav"></audio>
+          <p class="nums">the sung lines, one voice, before the stack</p>
+        </div>
+        <div class="pane">
+          <span class="chip out">CHOIR</span>
+          <div class="wf"><img src="assets/wf-choir.svg" alt="Waveform of the harmonized five-voice choir" /></div>
+          <audio controls preload="none" src="assets/choir.wav"></audio>
+          <p class="nums"><b>5 voices</b> · chord 0,3,7 + drone · measured
+            spatiality <b>0.60</b>, f0 median <b>74.0 Hz</b></p>
+        </div>
+      </div>
+      <p class="demo-note">The measured numbers come from running
+        <code>vox ear</code> and <code>vox vector</code> on the finished
+        choir: the stack reads as spatial (0.60 on a 0 to 1 axis) because
+        five decorrelated voices hold a tail the dry line does not have.</p>
+    </div>
+
+    <div class="demo">
+      <p class="demo-title">The deep carrier</p>
+      <p class="plain">Two percussive lines are spat on a tempo grid by
+        <code>say</code>, then poured into a 55 Hz FM growl: a channel
+        vocoder makes the growl speak the words, the bass chain keeps the
+        sub and the consonant band, and a quiet dry-diction layer keeps the
+        words legible inside the bass.</p>
+<pre><span class="c">$</span> vox carrier verse <span class="f">--lines</span> <span class="s">"Kick the pattern back to the top|Cut the deck and count to ten"</span> <span class="p">\</span>
+    <span class="f">--body</span> growl-55 <span class="f">--bpm</span> 142 <span class="f">--out</span> verse.wav</pre>
+      <div class="pair">
+        <div class="pane">
+          <span class="chip">DRY</span>
+          <div class="wf"><img src="assets/wf-carrier-dry.svg" alt="Waveform of the dry spat modulator on the grid" /></div>
+          <audio controls preload="none" src="assets/carrier-dry.wav"></audio>
+          <p class="nums">the dry spit: pure cadence, thin on purpose</p>
+        </div>
+        <div class="pane">
+          <span class="chip out">CARRIER</span>
+          <div class="wf"><img src="assets/wf-carrier.svg" alt="Waveform of the same words voiced by the deep growl body" /></div>
+          <audio controls preload="none" src="assets/carrier.wav"></audio>
+          <p class="nums">growl body · bass-safe f0 <b>96.0 Hz</b>
+            <span class="hot">(a naive tracker reads 123.8)</span></p>
+        </div>
+      </div>
+      <p class="demo-note"><strong>The honest part:</strong> pitch trackers
+        lie about harsh bass. On this voice the standard tracker reads
+        123.8 Hz; the bass-safe ruler (a low-floor pass that refuses to
+        trust it under 90 Hz targets) reads 96.0 Hz. That guard is a shipped
+        library function (<code>vox-core</code>), and the toolchain's own
+        tests pin it with a 55 Hz trap case.</p>
+    </div>
+
+    <div class="demo">
+      <p class="demo-title">The bodies</p>
+      <p class="plain">Five named carrier voices from the registry, each an
+        engine + parameters with a measured fingerprint written back into the
+        palette. All render offline through SuperCollider.</p>
+<pre><span class="c">$</span> vox bodies render growl-55 <span class="f">--out</span> growl.wav</pre>
+      <div class="gallery">
+        <div class="body-card">
+          <h3>growl-55</h3>
+          <div class="wf"><img src="assets/wf-growl-55.svg" alt="Waveform of the FM growl body" /></div>
+          <audio controls preload="none" src="assets/body-growl-55.wav"></audio>
+          <p>FM pair at a non-integer ratio: inharmonic, animal. The index
+            breathes on a slow LFO.</p>
+          <p class="nums">f0 86.6 Hz · HNR -0.3 dB · inharmonicity 0.64</p>
+        </div>
+        <div class="body-card">
+          <h3>subsaw-55</h3>
+          <div class="wf"><img src="assets/wf-subsaw-55.svg" alt="Waveform of the detuned sub-saw body" /></div>
+          <audio controls preload="none" src="assets/body-subsaw-55.wav"></audio>
+          <p>Three detuned saws with a falling resonant filter and a sub
+            sine an octave below. Massive, synthetic.</p>
+          <p class="nums">f0 55.1 Hz · HNR 2.7 dB · inharmonicity 0.14</p>
+        </div>
+        <div class="body-card">
+          <h3>throat-60</h3>
+          <div class="wf"><img src="assets/wf-throat-60.svg" alt="Waveform of the giant-throat body" /></div>
+          <audio controls preload="none" src="assets/body-throat-60.wav"></audio>
+          <p>A giant's vocal tract: 60 Hz glottal impulses through three low
+            formants, breath colored by the same tract.</p>
+          <p class="nums">f0 60.2 Hz · HNR 2.4 dB · inharmonicity 0.21</p>
+        </div>
+        <div class="body-card">
+          <h3>fof-a-180</h3>
+          <div class="wf"><img src="assets/wf-fof-a-180.svg" alt="Waveform of the FOF sung vowel body" /></div>
+          <audio controls preload="none" src="assets/body-fof-a-180.wav"></audio>
+          <p>FOF/chant /a/ vowel at 180 Hz: the clean formant-sung reference
+            at human vocal-tract scale.</p>
+          <p class="nums">f0 180.1 Hz · HNR 30.3 dB · inharmonicity 0.002</p>
+        </div>
+        <div class="body-card">
+          <h3>fof-impossible</h3>
+          <div class="wf"><img src="assets/wf-fof-impossible.svg" alt="Waveform of the impossible-formant body" /></div>
+          <audio controls preload="none" src="assets/body-fof-impossible.wav"></audio>
+          <p>A formant stack no human tract can produce: vowel-like but
+            physically unreal. The otherworldliness dial.</p>
+          <p class="nums">f0 219.9 Hz · HNR 23.9 dB · inharmonicity 0.0</p>
+        </div>
+      </div>
+      <p class="receipt">Every sound and number in this section regenerates
+        from <a href="https://github.com/chronick/vox/blob/main/docs/make_assets.sh">docs/make_assets.sh</a>,
+        which runs the pipelines shown and saves a
+        <a href="assets/numbers.json">numbers.json</a> receipt. The same
+        pipelines are pinned by the repo's test suites
+        (<code>scripts/test-all.sh</code> runs all thirteen).</p>
+    </div>
+  </section>
+
+  <section id="tools">
+    <h2>The tools</h2>
+    <p>Twelve tools and a shared core, each in its own isolated install,
+      found by name (<code>vox ear</code> runs <code>vox-ear</code>; a
+      missing tool prints its exact install command):</p>
+    <div class="tools">
+      <div><code>ear</code><span>voice measurement: F0, formants F1–F4, HNR, jitter, shimmer, vibrato</span></div>
+      <div><code>larynx</code><span>WORLD vocoder: retune with formants kept, harmonize into a choir</span></div>
+      <div><code>vector</code><span>a six-axis voice coordinate: measure it, diff it against a target</span></div>
+      <div><code>lyric</code><span>lyric prosody verifier + CMUdict packet (delivery: sustained | percussive)</span></div>
+      <div><code>tongue</code><span>a phoneme score: say→WORLD singing, bank concat, DiffSinger export, singing warp</span></div>
+      <div><code>flow</code><span>cadence grammar: pattern DSL, say-spat render, named fx chains</span></div>
+      <div><code>carrier</code><span>spat words poured into a deep body: vocode + bass chain + diction layer</span></div>
+      <div><code>bodies</code><span>the carrier-voice registry with measured fingerprints</span></div>
+      <div><code>take</code><span>card-driven render-and-self-verify: render, measure, report the error</span></div>
+      <div><code>syllabank</code><span>a syllable sample bank with a hard provenance contract</span></div>
+      <div><code>corpus</code><span>voice-corpus ingest gate: peak-normalize + VAD survivability</span></div>
+      <div><code>dataset</code><span>the dataset-health doctor: rubric-scored voicebank fitness</span></div>
+    </div>
+    <p class="dim" style="font-size:0.93rem; margin-top:0.9rem;">Under them:
+      <code>vox-core</code> (the bass-safe guarded F0 ruler + the shipped
+      SuperCollider synthdefs). The dependency matrix, Python-pin story, and
+      optional pieces are in
+      <a href="https://github.com/chronick/vox/blob/main/INSTALL.md">INSTALL.md</a>.</p>
+  </section>
+
+  <section id="pipes">
+    <h2>In one pipe with smpl</h2>
+    <p>vox tools speak the smpl frame protocol, so measurement, storage, and
+      reporting come from smpl while vox contributes the voice stages:</p>
+<pre><span class="c">$</span> smpl read take.wav <span class="p">|</span> vox ear describe <span class="p">|</span> smpl view
+<span class="c">$</span> smpl read take.wav <span class="p">|</span> vox ear describe <span class="p">|</span> vox vector diff <span class="f">--target</span> <span class="s">'{"breathiness":0.2,"roughness":0.1}'</span>
+<span class="c">$</span> smpl read take.wav <span class="p">|</span> vox larynx render <span class="f">--semitones</span> 2 <span class="p">|</span> smpl write up2.wav
+<span class="c">$</span> smpl read take.wav <span class="p">|</span> vox larynx harmonize <span class="f">--chord</span> 0,3,7 <span class="f">--drone</span> <span class="p">|</span> smpl write choir.wav</pre>
+    <p class="dim" style="font-size:0.93rem;">Every command above runs as
+      shown once both toolchains are installed. The frame protocol contract
+      lives in the smpl repo
+      (<a href="https://github.com/chronick/smpl/blob/main/spec.md">spec.md</a>).</p>
+  </section>
+
+  <section id="install">
+    <h2>Install</h2>
+    <p>Everything installs with <a href="https://docs.astral.sh/uv/">uv</a>.
+      The dispatcher is tiny; tools install one by one, so a heavy dependency
+      in one can never break another:</p>
+    <div class="copy-wrap">
+<pre><span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=packages/vox
+<span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-ear
+<span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-larynx</pre>
+      <button class="copy-btn" data-copy="uv tool install git+https://github.com/chronick/vox#subdirectory=packages/vox">copy</button>
+    </div>
+    <p><code>vox --help</code> lists every tool with its install command.
+      The full dependency matrix (Python pins, optional extras, system
+      binaries, what degrades without them) is in
+      <a href="https://github.com/chronick/vox/blob/main/INSTALL.md">INSTALL.md</a>.
+      MIT licensed.</p>
+  </section>
+
+  <footer>
+    <p>MIT · <a href="https://github.com/chronick/vox">github.com/chronick/vox</a> ·
+      <a href="https://github.com/chronick/vox/blob/main/INSTALL.md">INSTALL.md</a></p>
+    <p>Part of the LEMON house:
+      <a href="https://lemon-agent.dev">lemon-agent.dev</a>, field guides for
+      working with agents · <a href="https://lemon.audio">lemon.audio</a>,
+      the music side · <a href="https://chronick.github.io/smpl/">smpl</a>,
+      the audio toolchain vox grew from.</p>
+    <p>Every sound on this page was rendered by the commands shown, from
+      synthetic sources only; docs/make_assets.sh regenerates all of it.</p>
+  </footer>
+</div>
+
+<script>
+document.querySelectorAll('.copy-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    navigator.clipboard.writeText(btn.dataset.copy).then(function () {
+      btn.textContent = 'copied';
+      btn.classList.add('done');
+      setTimeout(function () {
+        btn.textContent = 'copy';
+        btn.classList.remove('done');
+      }, 1600);
+    });
+  });
+});
+</script>
+</body>
+</html>
