@@ -27,7 +27,7 @@ storage, and reporting; vox contributes the voice-specific stages.
 
 The port from the smpl repo is complete: every tool renamed to a
 generic instrument, each with its own tests (`scripts/test-all.sh`
-runs all thirteen suites). Live today:
+runs all fourteen suites). Live today:
 
 | Tool | Does |
 |---|---|
@@ -43,6 +43,7 @@ runs all thirteen suites). Live today:
 | `vox bodies` | a registry of named carrier voices with measured fingerprints |
 | `vox tongue` | a phoneme score with render paths: say→WORLD singing, bank concat, DiffSinger export, singing warp |
 | `vox carrier` | spat words poured into a deep harsh body: vocode + bass chain + dry-diction layer |
+| `vox cast` | voice conversion through a trained RVC model: pour a take into a learned voice ([CASTS.md](CASTS.md)) |
 
 Plus `vox-core` (the shared bass-safe F0 ruler and the shipped
 SuperCollider synthdefs `voxFof`/`voxGrowl`/`voxSubSaw`/`voxThroat`,
@@ -71,6 +72,9 @@ smpl read take.wav | vox larynx harmonize --chord 0,3,7 --drone | smpl write cho
 
 # Verify lyrics before any audio exists
 vox lyric review --delivery percussive --lines "spit the code back|cut the deck to black" --json
+
+# Re-voice a take through a trained RVC cast (one-time `vox cast setup` first)
+smpl read take.wav | vox cast convert --model mycast | smpl write voiced.wav
 ```
 
 ## Design

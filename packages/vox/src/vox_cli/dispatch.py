@@ -35,6 +35,7 @@ KNOWN_TOOLS: dict[str, str] = {
     "bodies": "tools/vox-bodies",
     "tongue": "tools/vox-tongue",
     "carrier": "tools/vox-carrier",
+    "cast": "tools/vox-cast",
 }
 
 

@@ -36,6 +36,7 @@ uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-datas
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-take
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-bodies
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-tongue
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-cast
 ```
 
 For the pipe examples you will also want the smpl core (`smpl read`,
@@ -59,6 +60,7 @@ For the pipe examples you will also want the smpl core (`smpl read`,
 | `vox-bodies` | 3.10–3.12 | via siblings + smpl-synth | — | SuperCollider for SC engines | larynx-recipe bodies render without SC |
 | `vox-tongue` | 3.10–3.12 | pyworld (+ siblings) | `[whisper]` extra | `say` for the sing path | compile/emit-ds work anywhere; sing needs `say`; warp needs whisper |
 | `vox-carrier` | 3.10–3.12 | via siblings + smpl-analysis (librosa) | — | `say`, `ffmpeg`; SuperCollider for SC bodies | the top of the render graph; needs the full stack |
+| `vox-cast` | ≥3.10 | none in the tool venv | — | `uv` (builds the engine venv) | `info`/`setup --status` work anywhere; `convert` degrades to a `vox cast setup` hint until the one-time engine build (a separate Python 3.10 venv with rvc-python + pinned torch, ~3 GB; see [CASTS.md](CASTS.md)) |
 | `vox-core` (library) | 3.10–3.12 | pyworld | praat-parselmouth | — | F0 ruler degrades to pyworld-only; also ships the voxFof/voxGrowl/voxSubSaw/voxThroat synthdefs as package data |
 
 Notes on the pins:

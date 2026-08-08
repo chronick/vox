@@ -35,8 +35,8 @@ step "install smpl core" uv tool install --quiet \
   --with "git+https://github.com/chronick/smpl#subdirectory=packages/smplstream" \
   --with "git+https://github.com/chronick/smpl#subdirectory=packages/smpl-analysis"
 
-# vox tools, exactly as INSTALL.md documents them (the guide's set).
-for t in packages/vox tools/vox-ear tools/vox-larynx tools/vox-vector tools/vox-lyric tools/vox-tongue; do
+# vox tools, exactly as INSTALL.md documents them (the guide's set + cast).
+for t in packages/vox tools/vox-ear tools/vox-larynx tools/vox-vector tools/vox-lyric tools/vox-tongue tools/vox-cast; do
   step "install $t" uv tool install --quiet "git+https://github.com/chronick/vox#subdirectory=$t"
 done
 
@@ -83,6 +83,17 @@ step "README: larynx retune" sh -c \
   'smpl read sung.wav | vox larynx render --semitones 2 | smpl write up2.wav > /dev/null'
 step "README: lyric review json" sh -c \
   'vox lyric review --delivery percussive --lines "spit the code back|cut the deck to black" --json | grep -q "n_lines"'
+
+# ------------------------------------------------- cast degradation ----
+# The documented behavior WITHOUT the 3 GB engine build: status says so,
+# and convert fails with the setup hint (never a traceback). Point the
+# engine path inside E2E_ROOT so a host machine's real engine can't leak in.
+export VOX_RVC_ENGINE="$E2E_ROOT/vox-engine"
+step "cast: status reports engine absent" sh -c \
+  'vox cast setup --status | grep -q "\"installed\": false"'
+mkdir -p "$WORK/fakecast" && : > "$WORK/fakecast/fake.pth"
+step "cast: convert degrades with setup hint" sh -c \
+  '! (smpl read spoken.wav | vox cast convert --model fakecast >/dev/null 2>cast-err.txt) && grep -q "vox cast setup" cast-err.txt'
 
 # ------------------------------------------------------------ summary ----
 echo
