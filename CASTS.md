@@ -84,3 +84,9 @@ cast's native sample rate (40 kHz for a standard export).
   to use — your own recordings, licensed datasets, synthetic sources).
 
 vox will not help you impersonate anyone. Build voices you own.
+
+## Lineage
+
+The techniques under `vox cast` — VITS, HuBERT/ContentVec, RMVPE,
+faiss retrieval, and the RVC software family — are cited per paper in
+[REFERENCES.md](REFERENCES.md#vox-cast--rvc-voice-conversion).

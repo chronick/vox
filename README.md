@@ -91,6 +91,9 @@ smpl read take.wav | vox cast convert --model mycast | smpl write voiced.wav
 - **Install only what you use.** Each tool is its own isolated install
   with its own dependency story; [INSTALL.md](INSTALL.md) has the
   dependency matrix, the Python-pin story, and the optional pieces.
+- **Cited techniques.** Every published technique a tool implements is
+  referenced in [REFERENCES.md](REFERENCES.md) — papers and software
+  lineages, per tool.
 
 Part of the LEMON house: [lemon-agent.dev](https://lemon-agent.dev) ·
 [lemon.audio](https://lemon.audio) ·
