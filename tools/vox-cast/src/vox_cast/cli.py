@@ -1,9 +1,11 @@
 """`vox cast` CLI — voice conversion through a trained RVC model, as an smpl stage.
 
     vox cast setup                                   → build the engine venv (one-time)
-    smpl read in.wav | vox cast convert --model DIR | smpl write out.wav
-    vox cast convert --in take.wav --model growl     → standalone (no upstream pipe)
+    smpl read in.wav | vox cast convert --model DIR --trust-model | smpl write out.wav
+    vox cast convert --in take.wav --model growl --trust-model | smpl write out.wav
     vox cast info --model growl                      → describe a cast from disk
+    vox cast import --model ~/Downloads/growl        → copy a local cast into the library
+    vox cast list                                    → list library casts as JSON
 
 Frame citizen: reads NDJSON frames on stdin, resolves the last-wins `audio`
 frame from the CAS, passes every input frame through unchanged, then appends
@@ -17,11 +19,37 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import math
+import re
 import sys
 
 from . import engine, model
 
 OP_PREFIX = "cast"
+_DEVICE = re.compile(r"^(?:cpu(?::[0-9]+)?|cuda:[0-9]+|mps)$")
+
+
+def _bounded_float(option: str, minimum: float, maximum: float):
+    def parse(value: str) -> float:
+        try:
+            parsed = float(value)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(f"{option} must be a number") from exc
+        if not math.isfinite(parsed) or not minimum <= parsed <= maximum:
+            raise argparse.ArgumentTypeError(
+                f"{option} must be a finite number from {minimum:g} to {maximum:g}"
+            )
+        return parsed
+
+    return parse
+
+
+def _device(value: str) -> str:
+    if not _DEVICE.fullmatch(value):
+        raise argparse.ArgumentTypeError(
+            "--device must be cpu, cpu:N, cuda:N, or mps (N is a non-negative integer)"
+        )
+    return value
 
 
 def _read_stdin_frames():
@@ -128,6 +156,15 @@ def _convert(args) -> int:
             f"engine not installed (looked in {engine.engine_dir()}) — {engine.INSTALL_HINT}",
             src_frame=src, passthrough=frames)
 
+    if not args.trust_model:
+        return _fail(
+            "op_failed",
+            "refusing to load untrusted RVC weights: .pth models are Python pickle files "
+            "that may execute code when loaded, and the engine venv is not a security "
+            "boundary; inspect the model and rerun with --trust-model only if you trust "
+            "its source",
+            src_frame=src, passthrough=frames)
+
     params = {
         "model": cast["name"], "pth": cast["pth"].name,
         "pitch": args.pitch, "f0_method": args.f0_method,
@@ -160,7 +197,22 @@ def _info(args) -> int:
     except model.CastNotFound as exc:
         sys.stderr.write(f"vox cast: {exc}\n")
         return 1
-    print(json.dumps(model.cast_info(cast), indent=2))
+    print(json.dumps(model.cast_info(cast, checksums=True), indent=2))
+    return 0
+
+
+def _import(args) -> int:
+    try:
+        cast = model.import_cast(args.model, index=args.index, name=args.name)
+    except (model.CastImportError, OSError) as exc:
+        sys.stderr.write(f"vox cast: {exc}\n")
+        return 1
+    print(json.dumps(model.cast_info(cast, checksums=True), indent=2))
+    return 0
+
+
+def _list(_args) -> int:
+    print(json.dumps(model.list_casts(), indent=2))
     return 0
 
 
@@ -186,20 +238,32 @@ def _build_parser():
                    help="cast name (under ~/.vox/casts), model dir, or .pth path")
     c.add_argument("--index", help="explicit .index path (default: the dir's single .index)")
     c.add_argument("--pitch", type=int, default=0, help="transpose in semitones (RVC f0up_key)")
-    c.add_argument("--f0-method", default="rmvpe", help="f0 estimator (rmvpe|harvest|crepe)")
-    c.add_argument("--index-rate", type=float, default=0.5,
+    c.add_argument("--f0-method", choices=("rmvpe", "harvest", "crepe"), default="rmvpe",
+                   help="f0 estimator (rmvpe|harvest|crepe)")
+    c.add_argument("--index-rate", type=_bounded_float("--index-rate", 0.0, 1.0), default=0.5,
                    help="retrieval blend 0–1 (higher = more of the cast's timbre bank)")
-    c.add_argument("--protect", type=float, default=0.33,
+    c.add_argument("--protect", type=_bounded_float("--protect", 0.0, 0.5), default=0.33,
                    help="consonant/breath protection 0–0.5 (lower = more conversion)")
-    c.add_argument("--rms-mix", type=float, default=1.0,
+    c.add_argument("--rms-mix", type=_bounded_float("--rms-mix", 0.0, 1.0), default=1.0,
                    help="loudness envelope blend 0–1 (1 = keep the source dynamics)")
     c.add_argument("--arch", choices=("v1", "v2"), default="v2", help="RVC model generation")
-    c.add_argument("--device", default="cpu:0",
+    c.add_argument("--device", type=_device, default="cpu:0",
                    help="cpu:0 (default, deterministic) | cuda:0 | mps (opt-in, unstable)")
+    c.add_argument(
+        "--trust-model", action="store_true",
+        help="load this trusted .pth pickle despite its ability to execute code",
+    )
 
     i = sub.add_parser("info", help="describe a cast from its files (no ML stack needed)")
     i.add_argument("--model", required=True)
     i.add_argument("--index")
+
+    a = sub.add_parser("import", help="copy an authorized local model into the cast library")
+    a.add_argument("--model", required=True, help="local .pth file or model directory")
+    a.add_argument("--index", help="explicit local .index file")
+    a.add_argument("--name", help="library name (default: directory or .pth stem)")
+
+    sub.add_parser("list", help="list imported casts as JSON")
     return p
 
 
@@ -215,6 +279,10 @@ def main(argv=None) -> int:
         return _setup(args)
     if args.cmd == "info":
         return _info(args)
+    if args.cmd == "import":
+        return _import(args)
+    if args.cmd == "list":
+        return _list(args)
     return _convert(args)
 
 

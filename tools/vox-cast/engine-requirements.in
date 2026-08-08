@@ -1,0 +1,7 @@
+# Top-level RVC engine constraints. Regenerate the hashed lock with the command
+# in the lock header after reviewing upstream releases.
+rvc-python==0.1.5
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+setuptools==80.9.0

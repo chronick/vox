@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vox Analyze"
+  short_description: "Create measured ear and vector voice reports"
+  default_prompt: "Use $vox-analyze to measure this voice recording, cite the ear and vector results with units, and separate evidence from interpretation."

@@ -1,7 +1,10 @@
 """CLI behavior: degradation hints, info, setup --status, and the full pipe
 through the fake engine (real runner, stub ML)."""
 
+import hashlib
 import json
+
+import pytest
 
 from conftest import frames_bytes, make_wav, parse_frames, run_cli
 
@@ -28,7 +31,9 @@ def test_convert_unknown_model_degrades(tmp_path, cast_tree):
 def test_pipe_convert_through_fake_engine(tmp_path, cast_tree, fake_engine):
     wav = make_wav(tmp_path / "take.wav", seconds=0.3, sr=22050)
     stdin, src = frames_bytes(wav)
-    r = run_cli(["convert", "--model", "growl", "--pitch", "3"], stdin_bytes=stdin)
+    r = run_cli([
+        "convert", "--model", "growl", "--pitch", "3", "--trust-model",
+    ], stdin_bytes=stdin)
     assert r.returncode == 0, r.stderr.decode()
 
     frames = parse_frames(r.stdout)
@@ -57,7 +62,9 @@ def test_pipe_convert_through_fake_engine(tmp_path, cast_tree, fake_engine):
 
 def test_standalone_in_file_closes_lineage(tmp_path, cast_tree, fake_engine):
     wav = make_wav(tmp_path / "take.wav")
-    r = run_cli(["convert", "--in", str(wav), "--model", "growl"])
+    r = run_cli([
+        "convert", "--in", str(wav), "--model", "growl", "--trust-model",
+    ])
     assert r.returncode == 0, r.stderr.decode()
     frames = parse_frames(r.stdout)
     audio = [f for f in frames if f.get("kind") == "audio"]
@@ -73,6 +80,139 @@ def test_info_reports_model_from_disk(cast_tree):
     info = json.loads(r.stdout)
     assert info["name"] == "growl"
     assert info["sample_rate"] == 40000
+    assert info["pth"]["sha256"] == hashlib.sha256(b"\x00" * 2048).hexdigest()
+    assert info["index"]["sha256"] == hashlib.sha256(b"\x00" * 1024).hexdigest()
+    assert {sidecar["file"] for sidecar in info["sidecars"]} == {
+        "config.json", "model_info.json",
+    }
+
+
+def test_info_direct_pth_does_not_inventory_unrelated_files(tmp_path):
+    pth = tmp_path / "weights.pth"
+    pth.write_bytes(b"weights")
+    (tmp_path / "MODEL_CARD.md").write_text("known provenance")
+    (tmp_path / "unrelated.json").write_text("another download")
+
+    r = run_cli(["info", "--model", str(pth)])
+
+    assert r.returncode == 0
+    info = json.loads(r.stdout)
+    assert [sidecar["file"] for sidecar in info["sidecars"]] == ["MODEL_CARD.md"]
+
+
+def test_installed_engine_requires_explicit_model_trust(tmp_path, cast_tree, fake_engine):
+    wav = make_wav(tmp_path / "take.wav")
+    r = run_cli(["convert", "--in", str(wav), "--model", "growl"])
+
+    assert r.returncode == 1
+    message = r.stderr.decode()
+    assert ".pth models are Python pickle files" in message
+    assert "venv is not a security boundary" in message
+    assert "--trust-model" in message
+    assert not fake_engine["record"].exists()
+
+
+@pytest.mark.parametrize(("option", "value"), [
+    ("--index-rate", "nan"),
+    ("--index-rate", "1.01"),
+    ("--index-rate", "-0.01"),
+    ("--rms-mix", "inf"),
+    ("--rms-mix", "1.01"),
+    ("--protect", "-inf"),
+    ("--protect", "0.51"),
+    ("--f0-method", "dio"),
+    ("--device", "cuda"),
+    ("--device", "cpu:-1"),
+    ("--device", "mps:0"),
+])
+def test_convert_rejects_unsafe_parameters(option, value):
+    r = run_cli(["convert", "--model", "growl", option, value])
+
+    assert r.returncode == 2
+    assert b"error:" in r.stderr
+
+
+@pytest.mark.parametrize(("option", "value"), [
+    ("--index-rate", "0"),
+    ("--index-rate", "1"),
+    ("--rms-mix", "0"),
+    ("--rms-mix", "1"),
+    ("--protect", "0"),
+    ("--protect", "0.5"),
+    ("--f0-method", "rmvpe"),
+    ("--f0-method", "harvest"),
+    ("--f0-method", "crepe"),
+    ("--device", "cpu"),
+    ("--device", "cpu:12"),
+    ("--device", "cuda:0"),
+    ("--device", "mps"),
+])
+def test_convert_accepts_parameter_boundaries(option, value, cast_tree):
+    r = run_cli(["convert", "--model", "growl", option, value], stdin_bytes=b"")
+
+    assert r.returncode == 1
+    assert b"no resolvable audio" in r.stderr
+
+
+def test_import_directory_and_list_preserve_sidecars(tmp_path):
+    source = tmp_path / "downloaded-voice"
+    source.mkdir()
+    (source / "weights.pth").write_bytes(b"weights")
+    (source / "voice.index").write_bytes(b"index")
+    (source / "config.json").write_text(json.dumps({"data": {"sample_rate": 48000}}))
+    (source / "portrait.png").write_bytes(b"png")
+    (source / "training-audio.wav").write_bytes(b"do not copy training data")
+
+    imported = run_cli(["import", "--model", str(source), "--name", "alto"])
+
+    assert imported.returncode == 0, imported.stderr.decode()
+    info = json.loads(imported.stdout)
+    assert info["name"] == "alto"
+    assert info["pth"]["sha256"] == hashlib.sha256(b"weights").hexdigest()
+    assert info["index"]["sha256"] == hashlib.sha256(b"index").hexdigest()
+    assert {sidecar["file"] for sidecar in info["sidecars"]} == {
+        "config.json", "portrait.png",
+    }
+    destination = tmp_path / "casts" / "alto"
+    assert (destination / "weights.pth").read_bytes() == b"weights"
+    assert (destination / "voice.index").read_bytes() == b"index"
+    assert (destination / "config.json").is_file()
+    assert (destination / "portrait.png").is_file()
+    assert not (destination / "training-audio.wav").exists()
+
+    listed = run_cli(["list"])
+    assert listed.returncode == 0
+    payload = json.loads(listed.stdout)
+    assert [cast["name"] for cast in payload["casts"]] == ["alto"]
+    assert payload["casts"][0]["sample_rate"] == 48000
+    assert "sha256" not in payload["casts"][0]["pth"]
+    assert "sha256" not in payload["casts"][0]["index"]
+
+
+def test_import_pth_with_explicit_index_and_refuses_overwrite(tmp_path):
+    source = tmp_path / "weights.pth"
+    index = tmp_path / "chosen.index"
+    source.write_bytes(b"weights")
+    index.write_bytes(b"index")
+    (tmp_path / "MODEL_CARD.md").write_text("authorized synthetic cast")
+    (tmp_path / "LICENSE").write_text("model license")
+    (tmp_path / "unrelated.json").write_text("do not sweep a downloads folder")
+
+    first = run_cli([
+        "import", "--model", str(source), "--index", str(index), "--name", "soprano",
+    ])
+    second = run_cli([
+        "import", "--model", str(source), "--index", str(index), "--name", "soprano",
+    ])
+
+    assert first.returncode == 0, first.stderr.decode()
+    assert json.loads(first.stdout)["name"] == "soprano"
+    destination = tmp_path / "casts" / "soprano"
+    assert (destination / "MODEL_CARD.md").is_file()
+    assert (destination / "LICENSE").is_file()
+    assert not (destination / "unrelated.json").exists()
+    assert second.returncode == 1
+    assert "refusing to overwrite" in second.stderr.decode()
 
 
 def test_setup_status_reports_absent_engine(tmp_path):

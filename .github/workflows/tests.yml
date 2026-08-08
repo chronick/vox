@@ -1,0 +1,110 @@
+name: Vox checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - "tools/**"
+      - "scripts/test-all.sh"
+      - "scripts/e2e-fresh-install.sh"
+      - "scripts/validate-skills.py"
+      - "skills/**"
+      - "docs/**"
+      - "README.md"
+      - "INSTALL.md"
+      - "CASTS.md"
+      - "pyproject.toml"
+      - ".github/workflows/tests.yml"
+  pull_request:
+    paths:
+      - "packages/**"
+      - "tools/**"
+      - "scripts/test-all.sh"
+      - "scripts/e2e-fresh-install.sh"
+      - "scripts/validate-skills.py"
+      - "skills/**"
+      - "docs/**"
+      - "README.md"
+      - "INSTALL.md"
+      - "CASTS.md"
+      - "pyproject.toml"
+      - ".github/workflows/tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vox-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      LIVE_TESTS: "0"
+      VOX_LIVE_TESTS: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.12"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Keep networked RVC setup outside the unit gate
+        run: |
+          if grep -Eq 'vox cast setup|e2e-fresh-install' scripts/test-all.sh; then
+            echo "scripts/test-all.sh must remain offline; gate model setup separately" >&2
+            exit 1
+          fi
+      - name: Run isolated offline unit suites
+        run: bash scripts/test-all.sh
+      - name: Validate authored agent skills
+        run: uv run --with pyyaml python scripts/validate-skills.py
+
+      # This unit job excludes the fresh-install journey, `vox cast setup`,
+      # cloud generation, and model downloads. The macOS job below exercises
+      # the public guide without building the 3 GB RVC engine.
+
+  engine-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.12"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Dry-run the hash-locked RVC environment
+        run: |
+          uv venv --python 3.10 "$RUNNER_TEMP/vox-engine-lock"
+          uv pip sync --dry-run --python "$RUNNER_TEMP/vox-engine-lock/bin/python" --require-hashes tools/vox-cast/src/vox_cast/engine-requirements.lock
+      - name: Confirm the published wheel contains the engine lock
+        working-directory: tools/vox-cast
+        env:
+          WHEEL_DIR: ${{ runner.temp }}/vox-cast-dist
+        run: |
+          uv build --wheel --out-dir "$WHEEL_DIR"
+          python -c 'import os, pathlib, zipfile; wheel = next(pathlib.Path(os.environ["WHEEL_DIR"]).glob("*.whl")); assert "vox_cast/engine-requirements.lock" in zipfile.ZipFile(wheel).namelist()'
+
+  fresh-install:
+    runs-on: macos-14
+    timeout-minutes: 20
+    env:
+      LIVE_TESTS: "0"
+      VOX_LIVE_TESTS: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.12"
+          enable-cache: true
+      - name: Run the documented singing and Cast-without-engine journeys
+        run: bash scripts/e2e-fresh-install.sh

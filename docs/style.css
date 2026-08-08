@@ -139,6 +139,47 @@ pre .o  { color: var(--dim); font-style: italic; }
 .house { margin-top: 1.6rem; font-family: var(--mono); font-size: 12.5px; color: var(--dim); }
 .house a { color: var(--accent-ink); }
 
+/* first-run path cards */
+.path-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+.path-card {
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 1rem;
+}
+.path-card h3 {
+  font-family: var(--mono);
+  font-size: 1rem;
+  color: #e9eef2;
+  margin-bottom: 0.45rem;
+}
+.path-card > p { color: var(--dim); font-size: 0.9rem; margin-bottom: 0.7rem; }
+.path-card pre { background: var(--bg); margin: 0.35rem 0 0.75rem; font-size: 11.5px; }
+.step-label {
+  display: block;
+  font-family: var(--mono);
+  color: var(--accent-ink);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+.requires {
+  color: var(--dim);
+  font-size: 0.88rem;
+  border-left: 2px solid var(--border);
+  padding-left: 0.7rem;
+  margin: 0.4rem 0 0.85rem;
+  max-width: 76ch;
+}
+.requires strong { color: var(--ink); }
+
 section { padding: 2.6rem 0 0.6rem; }
 h2 {
   font-family: var(--mono);
@@ -269,7 +310,7 @@ footer a { color: var(--accent-ink); }
 
 @media (max-width: 720px) {
   body { font-size: 15.5px; }
-  .pair, .tools { grid-template-columns: 1fr; }
+  .pair, .tools, .path-grid { grid-template-columns: 1fr; }
   .site-head { flex-direction: column; gap: 0.4rem; }
   .hero { padding-top: 2.2rem; }
   .pane .wf img { height: 76px; }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vox Cast"
+  short_description: "Safely import, convert, and compare RVC casts"
+  default_prompt: "Use $vox-cast to check provenance and readiness, import this authorized RVC model, convert the take locally, and compare dry against wet."

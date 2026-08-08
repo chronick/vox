@@ -62,5 +62,24 @@ def test_cast_info_reads_sidecar_metadata(cast_tree):
     assert info["sample_rate"] == 40000
     assert info["model_info"]["embedder_model"] == "contentvec"
     assert info["pth"]["file"] == "growl.pth"
+    assert "sha256" not in info["pth"]
     assert info["index"]["mb"] == pytest.approx(0.0, abs=0.1)
+    assert [sidecar["file"] for sidecar in info["sidecars"]] == [
+        "config.json", "model_info.json",
+    ]
     json.dumps(info)  # must stay serializable
+
+
+def test_cast_info_can_include_artifact_checksums(cast_tree):
+    info = model.cast_info(model.resolve_cast("growl"), checksums=True)
+
+    assert len(info["pth"]["sha256"]) == 64
+    assert len(info["index"]["sha256"]) == 64
+
+
+def test_library_alias_is_the_resolved_cast_name(tmp_path):
+    d = tmp_path / "casts" / "stage-name"
+    d.mkdir(parents=True)
+    (d / "original-export-name.pth").write_bytes(b"x")
+
+    assert model.resolve_cast("stage-name")["name"] == "stage-name"

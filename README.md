@@ -16,6 +16,9 @@ render like a score, and verify what came out against what was asked for.*
 smpl read take.wav | vox ear | smpl view
 ```
 
+Install the analyze starter stack in [INSTALL.md](INSTALL.md) before running
+that pipe; every workflow below links to its complete prerequisites.
+
 `vox` tools read and write the same self-describing NDJSON frames as
 `smpl`, so the two toolchains sit in one pipe: smpl handles audio-in,
 storage, and reporting; vox contributes the voice-specific stages.
@@ -43,11 +46,28 @@ runs all fourteen suites). Live today:
 | `vox bodies` | a registry of named carrier voices with measured fingerprints |
 | `vox tongue` | a phoneme score with render paths: say→WORLD singing, bank concat, DiffSinger export, singing warp |
 | `vox carrier` | spat words poured into a deep harsh body: vocode + bass chain + dry-diction layer |
-| `vox cast` | voice conversion through a trained RVC model: pour a take into a learned voice ([CASTS.md](CASTS.md)) |
+| `vox cast` | safely import, inventory, inspect, and convert through an authorized RVC model ([CASTS.md](CASTS.md)) |
 
 Plus `vox-core` (the shared bass-safe F0 ruler and the shipped
 SuperCollider synthdefs `voxFof`/`voxGrowl`/`voxSubSaw`/`voxThroat`,
 rendered through smpl-synth's NRT bridge).
+
+## Choose a first path
+
+- **Analyze a recording:** install smpl, the dispatcher, `vox-ear`, and
+  `vox-vector`, then run the measured ear → vector report. [Exact installs and
+  first command](INSTALL.md#analyze-a-recording).
+- **Make macOS `say` sing:** install the seven-piece singing stack, then follow
+  the [real six-command guide](https://chronick.github.io/vox/singing.html) from
+  spoken line to measured choir.
+- **Use an RVC cast:** install smpl, the dispatcher, and `vox-cast`; set up the
+  shared inference engine, then import a self-trained, explicitly licensed, or
+  synthetic model. [Safe cast guide](https://chronick.github.io/vox/casting.html).
+
+`vox cast setup` installs an isolated inference environment plus about 732 MB
+of shared HuBERT/RMVPE assets. It does **not** install a person's voice. vox
+does not ship or claim a hosted cast; bring only a model you are authorized to
+use.
 
 ## Use it with smpl
 
@@ -74,8 +94,12 @@ smpl read take.wav | vox larynx harmonize --chord 0,3,7 --drone | smpl write cho
 vox lyric review --delivery percussive --lines "spit the code back|cut the deck to black" --json
 
 # Re-voice a take through a trained RVC cast (one-time `vox cast setup` first)
-smpl read take.wav | vox cast convert --model mycast | smpl write voiced.wav
+vox cast import --model ~/Downloads/mycast.pth --name mycast
+vox cast list
+smpl read take.wav | vox cast convert --model mycast --trust-model | smpl write voiced.wav
 ```
+
+For the complete command-to-install mapping, use [INSTALL.md](INSTALL.md).
 
 ## Design
 
@@ -94,6 +118,23 @@ smpl read take.wav | vox cast convert --model mycast | smpl write voiced.wav
 - **Cited techniques.** Every published technique a tool implements is
   referenced in [REFERENCES.md](REFERENCES.md) — papers and software
   lineages, per tool.
+
+## Install the agent skills
+
+Two concise agent skills ship in `skills/`. Install them through the shared
+skills CLI so Codex and Claude Code use one managed copy:
+
+```bash
+npx skills add chronick/vox --global --agent codex claude-code --yes
+```
+
+- **`vox-analyze`** runs measured ear/vector reports, cites values with units,
+  and keeps measurement separate from interpretation.
+- **`vox-cast`** checks readiness and provenance, imports an authorized model,
+  converts locally, and compares the dry and converted takes.
+
+The skills orchestrate user-installed local CLIs. They do not upload audio,
+download voice models, or replace the producer's final judgment.
 
 Part of the LEMON house: [lemon-agent.dev](https://lemon-agent.dev) ·
 [lemon.audio](https://lemon.audio) ·

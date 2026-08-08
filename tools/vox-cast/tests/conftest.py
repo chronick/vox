@@ -17,6 +17,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from vox_cast import engine
 
 SRC = Path(__file__).parent.parent / "src"
 RUNNER = SRC / "vox_cast" / "runner.py"
@@ -110,6 +111,18 @@ def fake_engine(tmp_path, stub_site, monkeypatch):
     shim = d / "bin" / "python"
     shim.write_text(f"#!/bin/sh\nexec \"{sys.executable}\" \"$@\"\n")
     shim.chmod(0o755)
+    package = d / "lib" / "rvc_python"
+    base_models = package / "base_model"
+    base_models.mkdir(parents=True)
+    (package / "__init__.py").write_text("")
+    # Readiness checks exact artifact sizes but does not rehash 732 MB on each
+    # conversion. Sparse fixture files keep this hermetic and essentially free.
+    for filename, expected in engine.BASE_MODELS.items():
+        path = base_models / filename
+        path.write_bytes(b"")
+        with path.open("r+b") as fh:
+            fh.truncate(expected["size"])
+    engine._write_completion_marker(base_models)
     record = tmp_path / "rvc-record.json"
     monkeypatch.setenv("PYTHONPATH", str(stub_site))
     monkeypatch.setenv("FAKE_RVC_RECORD", str(record))

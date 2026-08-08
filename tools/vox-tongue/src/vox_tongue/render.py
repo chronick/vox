@@ -51,7 +51,15 @@ def _say_render(text: str, voice: str, sr: int) -> np.ndarray:
         if proc.returncode != 0 or not Path(out_path).exists():
             raise RuntimeError(f"say failed for {text!r} (voice {voice!r}): "
                                f"{proc.stderr.decode('utf-8', 'replace')[:200]}")
-        data, _ = sf.read(out_path, dtype="float64", always_2d=True)
+        data, actual_sr = sf.read(out_path, dtype="float64", always_2d=True)
+        if data.shape[0] == 0:
+            raise RuntimeError(
+                f"say produced no audio for {text!r} (voice {voice!r}, requested {sr} Hz)"
+            )
+        if int(actual_sr) != int(sr):
+            raise RuntimeError(
+                f"say rendered {text!r} at {actual_sr} Hz instead of requested {sr} Hz"
+            )
     return data.mean(axis=1)
 
 

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Use an RVC cast · a vox guide</title>
+<meta name="description" content="A local-first vox guide to installing the shared RVC engine, importing an authorized voice model with provenance, converting a take, and comparing the result." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site-head">
+    <a class="brand" href="./"><b>vox</b> · cast guide</a>
+    <nav class="site-nav">
+      <a href="./">home</a>
+      <a href="singing.html">singing guide</a>
+      <a href="./#install">install</a>
+      <a href="https://github.com/chronick/vox">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Use an RVC cast</h1>
+    <p class="tag">Bring an authorized model. Convert locally. Keep the receipt.</p>
+    <p class="sub">A cast is a trained RVC voice-conversion model. It changes
+      the voice color of a take while keeping the performed words, timing, and
+      pitch contour. vox installs the shared inference machinery, imports a
+      model you supply, and records conversion settings in the output frame.
+      It does not train a model, fetch a person's voice, or decide that you
+      have permission to use one.</p>
+    <p class="house"><strong>Use only models you are authorized to use:</strong>
+      your own trained voice, an explicitly licensed model with informed
+      consent, or a synthetic voice. Do not use a cast to impersonate someone.</p>
+  </section>
+
+  <section id="install">
+    <h2>Install the three CLI pieces</h2>
+    <p>These commands install the smpl frame tools, the light vox dispatcher,
+      and the light <code>vox-cast</code> frontend. They do not install an RVC
+      model or download a person's voice.</p>
+<pre><span class="c">$</span> uv tool install git+https://github.com/chronick/smpl#subdirectory=packages/smpl <span class="bs">\</span>
+    <span class="f">--with</span> git+https://github.com/chronick/smpl#subdirectory=packages/smplstream <span class="bs">\</span>
+    <span class="f">--with</span> git+https://github.com/chronick/smpl#subdirectory=packages/smpl-analysis
+<span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=packages/vox
+<span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-cast</pre>
+    <p class="requires"><strong>Also required:</strong> <code>uv</code> on
+      <code>PATH</code> and a network connection for the one-time setup below.
+      Conversion itself is local after setup.</p>
+  </section>
+
+  <section>
+    <h2>1. Set up the shared inference engine</h2>
+    <p>Inspect first, then build once:</p>
+<pre><span class="c">$</span> vox cast setup <span class="f">--status</span>
+<span class="c">$</span> vox cast setup</pre>
+    <p><code>setup</code> creates an isolated Python 3.10 RVC environment under
+      <code>~/.vox/engines/rvc</code>. The environment is about 3 GB after
+      torch and its dependencies. Setup also downloads exactly 732,380,624
+      bytes (about 732 MB decimal) of shared HuBERT/RMVPE inference assets,
+      pinned to
+      <a href="https://huggingface.co/daswer123/rvc_base/commit/bbb6736b97a98df0a87fe3592c0a061c53f0a75f">Hugging Face commit
+      <code>bbb6736b97a98df0a87fe3592c0a061c53f0a75f</code></a>.</p>
+    <p class="receipt">Those assets recognize content and pitch for every cast;
+      they are not a trained person's voice. A cast remains a separate
+      <code>.pth</code> file that you must obtain lawfully and import yourself.
+      The Python stack installs from a checked-in, hash-verified dependency
+      lock rather than resolving new transitive versions during setup.
+      Set <code>VOX_RVC_ENGINE</code> to move the engine; use
+      <code>vox cast setup --fresh</code> only when intentionally rebuilding it.</p>
+  </section>
+
+  <section>
+    <h2>2. Inspect provenance before import</h2>
+    <p>Prefer a self-trained, explicitly licensed, or fully synthetic model.
+      Before loading any <code>.pth</code>, verify its source and checksum and
+      read its model card and license. RVC weights are pickle-based artifacts,
+      so treat an unknown file as executable untrusted input, not just media.</p>
+    <span class="step-label">macOS</span>
+<pre><span class="c">$</span> shasum <span class="f">-a</span> 256 ~/Downloads/mycast/mycast.pth ~/Downloads/mycast/mycast.index</pre>
+    <span class="step-label">Linux</span>
+<pre><span class="c">$</span> sha256sum ~/Downloads/mycast/mycast.pth ~/Downloads/mycast/mycast.index</pre>
+    <p class="dim" style="font-size:0.93rem;">Use the command for your system
+      and compare every result with the publisher's <code>SHA256SUMS.txt</code>.
+      A matching hash proves which bytes you received; it does not prove that
+      the model was created or licensed ethically.</p>
+    <p>A normal export has one required weights file and an optional retrieval
+      index. A directory may also include training metadata:</p>
+<pre>mycast/
+├── mycast.pth          # required weights
+├── mycast.index        # optional retrieval bank
+├── config.json         # optional training sidecar
+├── model_info.json     # optional training sidecar
+├── MODEL_CARD.md       # source, consent, intended use, limitations
+├── LICENSE.md          # permission and restrictions
+└── SHA256SUMS.txt      # release checksums</pre>
+    <p class="dim">No first-party cast is claimed or downloaded by this guide.
+      Training is outside vox; Applio and other RVC trainers can produce a
+      standard RVC v2 export (use <code>--arch v1</code> only for a v1 model).</p>
+  </section>
+
+  <section>
+    <h2>3. Import and identify the cast</h2>
+    <p>Import either a model directory or a <code>.pth</code>. The optional
+      <code>--index</code> selects a retrieval bank, and <code>--name</code>
+      chooses the stable local name. Import copies the weights, selected index,
+      and common JSON/YAML/text/image/Markdown sidecars into
+      <code>~/.vox/casts</code> (or
+      <code>VOX_CASTS_DIR</code>) and refuses to overwrite an existing cast.</p>
+<pre><span class="c">$</span> vox cast import <span class="f">--model</span> ~/Downloads/mycast <span class="f">--name</span> mycast
+
+<span class="c"># Or import explicit files:</span>
+<span class="c">$</span> vox cast import <span class="f">--model</span> ~/Downloads/mycast.pth <span class="bs">\</span>
+    <span class="f">--index</span> ~/Downloads/mycast.index <span class="f">--name</span> mycast
+
+<span class="c">$</span> vox cast list
+<span class="c">$</span> vox cast info <span class="f">--model</span> mycast</pre>
+    <p><code>list</code> inventories the local library. <code>info</code> reads
+      the chosen files and available metadata without loading torch. Import and
+      info receipts include exact SHA-256 values for the weights/index plus the
+      copied sidecar inventory. Confirm those hashes, paths, architecture notes,
+      and sample rate against the publisher's release receipt before conversion.</p>
+  </section>
+
+  <section>
+    <h2>4. Convert a take</h2>
+    <p>The smpl pipe keeps the dry frame and adds a converted
+      <code>voice.wet</code> frame with model name and every conversion knob in
+      <code>params</code>:</p>
+<pre><span class="c">$</span> smpl read take.wav <span class="p">|</span> vox cast convert <span class="f">--model</span> mycast <span class="f">--trust-model</span> <span class="p">|</span> smpl write voiced.wav</pre>
+    <p><code>--trust-model</code> explicitly acknowledges that pickle-based
+      <code>.pth</code> weights can execute Python code. The engine venv keeps
+      dependencies separate; it is not a security sandbox. Use the flag only
+      after verifying the publisher and exact checksum.</p>
+    <p>For a direct input file, keep <code>smpl write</code> on the end so the
+      protocol output becomes a WAV:</p>
+<pre><span class="c">$</span> vox cast convert <span class="f">--in</span> take.wav <span class="f">--model</span> mycast <span class="f">--trust-model</span> <span class="bs">\</span>
+    <span class="f">--pitch</span> 0 <span class="f">--index-rate</span> 0.5 <span class="p">|</span> smpl write voiced.wav</pre>
+    <p>Start with <code>cpu:0</code> for the deterministic path. Adjust pitch
+      only when source and model ranges need it; increase
+      <code>--index-rate</code> carefully because stronger retrieval can trade
+      room and diction for more model timbre. Keep the dry input beside the
+      wet output for review.</p>
+  </section>
+
+  <section>
+    <h2>5. Compare before you keep it</h2>
+    <p>Listen dry against wet for intelligibility, pitch stability, consonant
+      damage, breath artifacts, and whether the performance still feels like
+      the source. For a measured comparison, add the analysis tools:</p>
+<pre><span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-ear
+<span class="c">$</span> uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-vector
+
+<span class="c">$</span> smpl read take.wav <span class="p">|</span> vox ear describe <span class="p">|</span> vox vector measure <span class="p">|</span> smpl view
+<span class="c">$</span> smpl read voiced.wav <span class="p">|</span> vox ear describe <span class="p">|</span> vox vector measure <span class="p">|</span> smpl view</pre>
+    <p>Use the measurements as evidence about the render, not as proof of
+      identity or authorization. Final judgment belongs to the performer or
+      producer who can hear the words and context.</p>
+  </section>
+
+  <section>
+    <h2>Publishing a redistributable first-party cast</h2>
+    <p>If a project later creates a cast it has the right to redistribute,
+      publish each version as a <a href="https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases"><strong>GitHub Release asset</strong></a>, not in
+      Git and not through Git LFS. A release bundle should contain the
+      <code>.pth</code>, optional <code>.index</code>, model card, license, and
+      checksums. The model card should name the dataset source and consent,
+      training tool and RVC architecture, intended and prohibited uses,
+      known limitations, and a contact for rights questions.</p>
+    <p class="receipt">Publishing mechanics do not create permission. Verify
+      consent and redistribution rights before release, and never describe a
+      cast as available until its release and checksums actually exist.</p>
+  </section>
+
+  <footer>
+    <p>MIT · <a href="https://github.com/chronick/vox">github.com/chronick/vox</a> ·
+      <a href="https://github.com/chronick/vox/blob/main/CASTS.md">CASTS.md</a> ·
+      <a href="./">vox home</a></p>
+    <p>Part of the LEMON house:
+      <a href="https://lemon-agent.dev">lemon-agent.dev</a> ·
+      <a href="https://lemon.audio">lemon.audio</a> ·
+      <a href="https://chronick.github.io/smpl/">smpl</a>.</p>
+  </footer>
+</div>
+<script src="copy.js"></script>
+</body>
+</html>

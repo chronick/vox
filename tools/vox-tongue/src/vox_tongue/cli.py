@@ -4,6 +4,9 @@
         [--score out.yaml]
         -> a validated TONGUE score (written to --score, else printed as YAML on stdout)
 
+    vox lyric packet ... | vox tongue compile-packet --melody "A2,C3,E3" --score out.yaml
+        -> compile reviewed packet phones + gates directly into a validated TONGUE score
+
     vox tongue sing --score s.yaml --out t.wav
         -> renders the score to t.wav via say->WORLD, and prints the per-syllable manifest JSON
 
@@ -42,6 +45,47 @@ def _cmd_compile(args) -> int:
     if args.score:
         with open(args.score, "w", encoding="utf-8") as fh:
             fh.write(text)
+        sys.stderr.write(f"wrote {args.score} ({len(score['syllables'])} syllables)\n")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+def _load_packet(path: str | None) -> dict:
+    if path and path != "-":
+        with open(path, encoding="utf-8") as fh:
+            packet = json.load(fh)
+    else:
+        packet = json.load(sys.stdin)
+    if not isinstance(packet, dict):
+        raise ValueError("packet JSON must be an object")
+    return packet
+
+
+def _cmd_compile_packet(args) -> int:
+    try:
+        packet = _load_packet(args.packet)
+        score = compile_mod.compile_packet(
+            packet,
+            _split_melody(args.melody),
+            bpm=args.bpm,
+            flow_pattern=args.flow,
+        )
+    except (OSError, json.JSONDecodeError) as exc:
+        sys.stderr.write(f"vox tongue compile-packet: could not read lyric packet: {exc}\n")
+        return 2
+    except ValueError as exc:
+        sys.stderr.write(f"vox tongue compile-packet: lyric packet rejected: {exc}\n")
+        return 2
+
+    text = schema.to_yaml(score)
+    if args.score:
+        try:
+            with open(args.score, "w", encoding="utf-8") as fh:
+                fh.write(text)
+        except OSError as exc:
+            sys.stderr.write(f"vox tongue compile-packet: could not write score: {exc}\n")
+            return 1
         sys.stderr.write(f"wrote {args.score} ({len(score['syllables'])} syllables)\n")
     else:
         sys.stdout.write(text)
@@ -131,6 +175,21 @@ def _build_parser():
     c.add_argument("--flow", help="optional FLOW grid pattern (e.g. 'X.x.') for authored placement")
     c.add_argument("--score", help="write the score YAML here (else printed to stdout)")
     c.set_defaults(func=_cmd_compile)
+
+    cp = sub.add_parser(
+        "compile-packet",
+        help="reviewed vox-lyric packet JSON -> a TONGUE score",
+    )
+    cp.add_argument(
+        "--packet",
+        default="-",
+        help="vox-lyric packet JSON file (default: stdin; use - for stdin)",
+    )
+    cp.add_argument("--melody", required=True, help="comma notes/Hz, cycled (e.g. A2,C3,E3)")
+    cp.add_argument("--bpm", type=float, default=120.0)
+    cp.add_argument("--flow", help="optional FLOW grid pattern overriding the packet flow hint")
+    cp.add_argument("--score", help="write the score YAML here (else printed to stdout)")
+    cp.set_defaults(func=_cmd_compile_packet)
 
     e = sub.add_parser("emit-ds", help="emit a DiffSinger .ds segment (JSON) from a TONGUE score")
     e.add_argument("--score", required=True, help="path to a TONGUE score YAML")

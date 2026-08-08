@@ -8,11 +8,32 @@ Run (siblings on PYTHONPATH):
 
 from __future__ import annotations
 
+import io
+import json
+import subprocess
+from pathlib import Path
+
 import pytest
 from vox_tongue import compile as compile_mod
-from vox_tongue import g2p, schema
+from vox_tongue import cli, g2p, schema
 
 SR = 44_100
+
+
+def test_say_render_rejects_empty_audio_before_world(monkeypatch):
+    import numpy as np
+    import soundfile as sf
+    from vox_tongue import render
+
+    def fake_run(cmd, capture_output):
+        Path(cmd[cmd.index("-o") + 1]).touch()
+        return subprocess.CompletedProcess(cmd, 0, b"", b"")
+
+    monkeypatch.setattr(render.subprocess, "run", fake_run)
+    monkeypatch.setattr(sf, "read", lambda *_args, **_kwargs: (np.zeros((0, 1)), SR))
+
+    with pytest.raises(RuntimeError, match="say produced no audio"):
+        render._say_render("ma", "Fred", SR)
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +87,54 @@ def test_compile_flow_placement_matches_compile_flow():
     for syl, ev in zip(score["syllables"], events):
         assert syl["start_beat"] == pytest.approx(ev["t"] / spb)
         assert syl["dur_beats"] == pytest.approx(ev["dur"] / spb)
+
+
+def test_compile_packet_cli_reads_file_and_writes_score(tmp_path):
+    from vox_lyric.packet import build_packet
+
+    packet_path = tmp_path / "river-packet.json"
+    score_path = tmp_path / "river.yaml"
+    packet_path.write_text(json.dumps(build_packet(["slow river carry me home"], "sustained")))
+
+    rc = cli.main([
+        "compile-packet", "--packet", str(packet_path),
+        "--melody", "A2,C3,E3,D3,C3", "--bpm", "90", "--score", str(score_path),
+    ])
+
+    assert rc == 0
+    score = schema.load_score(str(score_path))
+    assert score["meta"]["bpm"] == 90.0
+    assert score["syllables"][0]["note"] == "A2"
+
+
+def test_compile_packet_cli_reads_stdin(monkeypatch, capsys):
+    from vox_lyric.packet import build_packet
+
+    packet = build_packet(["slow river carry me home"], "sustained")
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(packet)))
+
+    rc = cli.main(["compile-packet", "--melody", "A2,C3", "--bpm", "90"])
+
+    assert rc == 0
+    score = schema.load_score(schema.from_yaml(capsys.readouterr().out))
+    assert score["meta"]["bpm"] == 90.0
+    assert len(score["syllables"]) == packet["lines"][0]["syllable_count"]
+
+
+def test_compile_packet_cli_reports_rejected_lyrics(tmp_path, capsys):
+    from vox_lyric.packet import build_packet
+
+    packet_path = tmp_path / "rejected.json"
+    packet_path.write_text(json.dumps(build_packet(["darkness eternal soul"], "percussive")))
+
+    rc = cli.main([
+        "compile-packet", "--packet", str(packet_path), "--melody", "E2,G2",
+    ])
+
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "lyric packet rejected" in err
+    assert "rewrite" in err
 
 
 # ---------------------------------------------------------------------------

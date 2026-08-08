@@ -36,12 +36,74 @@ uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-datas
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-take
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-bodies
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-tongue
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-carrier
 uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-cast
 ```
 
-For the pipe examples you will also want the smpl core (`smpl read`,
-`smpl view`); its install command is in the
-[smpl README](https://github.com/chronick/smpl#install).
+For pipe examples, install the smpl core (`smpl read`, `smpl write`,
+`smpl view`) too:
+
+```bash
+uv tool install git+https://github.com/chronick/smpl#subdirectory=packages/smpl \
+  --with git+https://github.com/chronick/smpl#subdirectory=packages/smplstream \
+  --with git+https://github.com/chronick/smpl#subdirectory=packages/smpl-analysis
+```
+
+## First-run recipes
+
+Each recipe is complete: install the listed pieces, then run its command.
+
+### Analyze a recording
+
+```bash
+uv tool install git+https://github.com/chronick/smpl#subdirectory=packages/smpl \
+  --with git+https://github.com/chronick/smpl#subdirectory=packages/smplstream \
+  --with git+https://github.com/chronick/smpl#subdirectory=packages/smpl-analysis
+uv tool install git+https://github.com/chronick/vox#subdirectory=packages/vox
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-ear
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-vector
+
+curl -LO https://chronick.github.io/vox/assets/guide-sung.wav
+smpl read guide-sung.wav | vox ear describe | vox vector measure | smpl view
+```
+
+The shipped demo reports median F0 near `130.83 Hz` and HNR near `24.08 dB`.
+Once those rows appear, replace `guide-sung.wav` with your own recording.
+
+### Make macOS `say` sing
+
+Install smpl and the dispatcher as above, then:
+
+```bash
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-lyric
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-tongue
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-larynx
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-ear
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-vector
+```
+
+This path also needs a Mac with `say`. The
+[six-command guide](https://chronick.github.io/vox/singing.html) starts at a
+spoken line and ends at a measured five-voice choir; it does not need
+SuperCollider.
+
+### Convert with an RVC cast
+
+Install smpl and the dispatcher as above, then:
+
+```bash
+uv tool install git+https://github.com/chronick/vox#subdirectory=tools/vox-cast
+vox cast setup
+vox cast import --model ~/Downloads/mycast.pth --name mycast
+vox cast list
+smpl read take.wav | vox cast convert --model mycast --trust-model | smpl write voiced.wav
+```
+
+`setup` needs `uv` and a network connection. It builds an isolated engine
+(about 3 GB total) and downloads 732,380,624 bytes (about 732 MB decimal) of
+shared HuBERT/RMVPE inference assets. It does not install a person's voice.
+Import only a self-trained, explicitly licensed, or synthetic model you are
+authorized to use; see [CASTS.md](CASTS.md).
 
 ## Dependency matrix
 
@@ -60,7 +122,7 @@ For the pipe examples you will also want the smpl core (`smpl read`,
 | `vox-bodies` | 3.10–3.12 | via siblings + smpl-synth | — | SuperCollider for SC engines | larynx-recipe bodies render without SC |
 | `vox-tongue` | 3.10–3.12 | pyworld (+ siblings) | `[whisper]` extra | `say` for the sing path | compile/emit-ds work anywhere; sing needs `say`; warp needs whisper |
 | `vox-carrier` | 3.10–3.12 | via siblings + smpl-analysis (librosa) | — | `say`, `ffmpeg`; SuperCollider for SC bodies | the top of the render graph; needs the full stack |
-| `vox-cast` | ≥3.10 | none in the tool venv | — | `uv` (builds the engine venv) | `info`/`setup --status` work anywhere; `convert` degrades to a `vox cast setup` hint until the one-time engine build (a separate Python 3.10 venv with rvc-python + pinned torch, ~3 GB; see [CASTS.md](CASTS.md)) |
+| `vox-cast` | ≥3.10 | none in the tool venv | — | `uv` (builds the engine venv) | `import`/`list`/`info`/`setup --status` work without loading the ML stack; `convert` degrades to a `vox cast setup` hint until the one-time engine build (a separate Python 3.10 venv with rvc-python + pinned torch, ~3 GB total and ~732 MB shared base assets; see [CASTS.md](CASTS.md)) |
 | `vox-core` (library) | 3.10–3.12 | pyworld | praat-parselmouth | — | F0 ruler degrades to pyworld-only; also ships the voxFof/voxGrowl/voxSubSaw/voxThroat synthdefs as package data |
 
 Notes on the pins:
